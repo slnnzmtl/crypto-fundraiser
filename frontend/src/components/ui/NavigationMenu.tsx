@@ -1,39 +1,63 @@
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import { observer } from 'mobx-react-lite';
+import { useNavigate } from 'react-router-dom';
 import { useModal } from '../../hooks/useModal';
-import { Button } from './primitives';
-import ConnectWallet from '../ConnectWallet';
+import { Button, ProgressBar } from './primitives';
+import { BurgerMenu } from './BurgerMenu';
+import { SidebarMenu } from './SidebarMenu';
+import { progressStore } from '../../stores/ProgressStore';
 
 const NavigationMenu: React.FC = observer(() => {
   const { openModal } = useModal();
+  const navigate = useNavigate();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const handleGoHome = useCallback(() => {
+    navigate('/');
+    setIsMenuOpen(false);
+  }, [navigate]);
+
+  const handleCreateCampaign = useCallback(() => {
+    openModal('createCampaign');
+    setIsMenuOpen(false);
+  }, [openModal]);
+
+  const toggleMenu = useCallback(() => {
+    setIsMenuOpen(prev => !prev);
+  }, []);
+
+  const closeMenu = useCallback(() => {
+    setIsMenuOpen(false);
+  }, []);
 
   return (
-    <header className="bg-dark-800">
+    <header className="bg-dark-800 relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Desktop Navigation */}
-        <div className="hidden sm:flex h-20 items-center justify-between">
+        {/* Main Navigation */}
+        <div className="flex h-16 sm:h-20 items-center justify-between">
           <div className="flex items-center">
-            <h1 className="text-xl font-bold text-white">CryptoFundraiser</h1>
-            <Button variant="flat" onClick={() => openModal('createCampaign')} className="ml-8">
+            <Button variant="flat" className="text-lg sm:text-xl font-bold text-white" onClick={handleGoHome}>
+              CryptoFundraiser
+            </Button>
+            <Button variant="flat" onClick={handleCreateCampaign} className="hidden sm:block outline-none">
               Create Campaign
             </Button>
           </div>
-          <ConnectWallet />
+          <BurgerMenu isOpen={isMenuOpen} onClick={toggleMenu} />
         </div>
-
-        {/* Mobile Navigation */}
-        <div className="sm:hidden">
-          <div className="h-16 flex items-center justify-between">
-            <h1 className="text-lg font-bold text-white">CryptoFundraiser</h1>
-            <ConnectWallet />
-          </div>
-          <div className="h-12 -mx-4 px-4 flex items-center border-t border-dark-700">
-            <Button variant="flat" onClick={() => openModal('createCampaign')} className="text-sm">
-              Create Campaign
-            </Button>
-          </div>
-        </div>
+          
+        <SidebarMenu 
+          isOpen={isMenuOpen}
+          onCreateCampaign={handleCreateCampaign}
+          onClose={closeMenu}
+        />
       </div>
+      {progressStore.isVisible && (
+        <ProgressBar 
+          progress={progressStore.progress} 
+          className="absolute bottom-0 left-0" 
+        />
+      )}
     </header>
   );
 });

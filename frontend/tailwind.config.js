@@ -6,17 +6,23 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        'dark-900': '#111827',
-        'dark-800': '#1F2937',
-        'dark-700': '#374151',
-        'dark-600': '#4B5563',
-        'dark-500': '#6B7280',
-        'dark-400': '#9CA3AF',
-        'dark-300': '#D1D5DB',
-        'dark-200': '#E5E7EB',
-        'dark-100': '#F3F4F6',
-        'dark-50': '#F9FAFB',
+        dark: {
+          900: '#121212',
+          800: '#1E1E1E',
+          700: '#2D2D2D',
+          600: '#3D3D3D',
+          500: '#4D4D4D',
+        }
       },
+      keyframes: {
+        lineLoading: {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(400%)' }
+        }
+      },
+      animation: {
+        lineLoading: 'lineLoading 1s ease-in-out infinite'
+      }
     },
   },
   plugins: [],
