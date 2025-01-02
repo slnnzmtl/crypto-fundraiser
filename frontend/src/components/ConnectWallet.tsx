@@ -17,9 +17,9 @@ const ConnectWallet: React.FC = observer(() => {
   };
 
   return (
-    <Button onClick={handleConnect}>
+    <Button variant="flat" className="w-full sm:w-auto"  onClick={handleConnect}>
       {campaignStore.address
-        ? formatAddress(campaignStore.address)
+        ? 'Account'
         : 'Connect Wallet'}
     </Button>
   );
