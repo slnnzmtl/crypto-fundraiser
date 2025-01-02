@@ -1,12 +1,28 @@
 import { makeAutoObservable } from 'mobx';
 import { contractService } from '../services/ContractService';
 import { Campaign, CampaignInput } from '../types/campaign';
+import { ErrorType } from '../types/error';
+import { progressStore } from './ProgressStore';
+
+export type ViewType = 'grid' | 'list';
+
+export interface Donation {
+  donor: string;
+  amount: string;
+  timestamp: Date;
+}
+
+const VIEW_TYPE_KEY = 'campaignViewType';
 
 export class CampaignStore {
   campaigns: Campaign[] = [];
+  donations: Record<number, Donation[]> = {};
   loading: boolean = false;
+  initialLoading: boolean = true;
   error: string | null = null;
   address: string | null = null;
+  viewType: ViewType = localStorage.getItem(VIEW_TYPE_KEY) as ViewType || 'grid';
+  showOnlyOwned: boolean = false;
 
   constructor() {
     makeAutoObservable(this);
@@ -21,7 +37,9 @@ export class CampaignStore {
         await this.loadCampaigns();
       }
     } catch (error) {
-      // Ignore initial connection errors
+      console.error('Failed to initialize:', error);
+    } finally {
+      this.initialLoading = false;
     }
   }
 
@@ -42,14 +60,17 @@ export class CampaignStore {
     this.error = null;
 
     try {
+      progressStore.start();
       const address = await contractService.connect();
       this.setAddress(address);
-      await this.loadCampaigns();
+      progressStore.finish();
     } catch (error) {
+      progressStore.reset();
+      console.error('Failed to connect:', error);
       if (error instanceof Error) {
         throw error;
       }
-      throw new Error('network');
+      throw new Error(ErrorType.NETWORK);
     } finally {
       this.setLoading(false);
     }
@@ -60,30 +81,45 @@ export class CampaignStore {
     this.error = null;
 
     try {
+      progressStore.start();
+      if (!this.address) {
+        await this.connect();
+      }
       const campaigns = await contractService.getCampaigns();
       this.campaigns = campaigns;
+      progressStore.finish();
     } catch (error) {
+      progressStore.reset();
+      console.error('Failed to load campaigns:', error);
       if (error instanceof Error) {
         throw error;
       }
-      throw new Error('network');
+      throw new Error(ErrorType.NETWORK);
     } finally {
       this.setLoading(false);
     }
   }
 
-  async createCampaign(campaignInput: CampaignInput) {
+  async createCampaign(campaignInput: CampaignInput): Promise<number> {
     this.setLoading(true);
     this.error = null;
 
     try {
-      await contractService.createCampaign(campaignInput);
+      progressStore.start();
+      if (!this.address) {
+        await this.connect();
+      }
+      const campaignId = await contractService.createCampaign(campaignInput);
       await this.loadCampaigns();
+      progressStore.finish();
+      return campaignId;
     } catch (error) {
+      progressStore.reset();
+      console.error('Failed to create campaign:', error);
       if (error instanceof Error) {
         throw error;
       }
-      throw new Error('network');
+      throw new Error(ErrorType.NETWORK);
     } finally {
       this.setLoading(false);
     }
@@ -94,16 +130,96 @@ export class CampaignStore {
     this.error = null;
 
     try {
+      progressStore.start();
+      if (!this.address) {
+        await this.connect();
+      }
       await contractService.donate(campaignId, amount);
-      await this.loadCampaigns();
+      await Promise.all([
+        this.loadCampaigns(),
+        this.loadCampaignDonations(campaignId)
+      ]);
+      progressStore.finish();
     } catch (error) {
+      progressStore.reset();
+      console.error('Failed to donate:', error);
       if (error instanceof Error) {
         throw error;
       }
-      throw new Error('network');
+      throw new Error(ErrorType.NETWORK);
     } finally {
       this.setLoading(false);
     }
+  }
+
+  async loadCampaignDonations(campaignId: number) {
+    try {
+      progressStore.start();
+      if (!this.address) {
+        await this.connect();
+      }
+      const donations = await contractService.getCampaignDonations(campaignId);
+      this.donations[campaignId] = donations;
+      progressStore.finish();
+    } catch (error) {
+      progressStore.reset();
+      console.error('Failed to load donations:', error);
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error(ErrorType.NETWORK);
+    }
+  }
+
+  async completeCampaign(campaignId: number) {
+    this.setLoading(true);
+    this.error = null;
+
+    try {
+      progressStore.start();
+      if (!this.address) {
+        await this.connect();
+      }
+      await contractService.completeCampaign(campaignId);
+      await this.loadCampaigns();
+      progressStore.finish();
+    } catch (error) {
+      progressStore.reset();
+      console.error('Failed to complete campaign:', error);
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error(ErrorType.NETWORK);
+    } finally {
+      this.setLoading(false);
+    }
+  }
+
+  setViewType(type: ViewType) {
+    this.viewType = type;
+    localStorage.setItem(VIEW_TYPE_KEY, type);
+  }
+
+  get filteredCampaigns(): Campaign[] {
+    if (!this.showOnlyOwned || !this.address) {
+      return this.campaigns;
+    }
+    return this.campaigns.filter(
+      campaign => campaign.owner.toLowerCase() === this.address?.toLowerCase()
+    );
+  }
+
+  setShowOnlyOwned(show: boolean) {
+    this.showOnlyOwned = show;
+  }
+
+  async logout() {
+    this.setAddress(null);
+    this.setShowOnlyOwned(false);
+    this.campaigns = [];
+    this.donations = {};
+    this.error = null;
+    this.loading = false;
   }
 }
 
