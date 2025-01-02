@@ -1,6 +1,8 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
+import { observer } from 'mobx-react-lite';
 import { Button } from './primitives';
 import ConnectWallet from '../ConnectWallet';
+import { campaignStore } from '../../stores/CampaignStore';
 
 interface SidebarMenuProps {
   isOpen: boolean;
@@ -14,18 +16,21 @@ interface MenuItemProps {
   className?: string;
 }
 
-const MenuItem: React.FC<MenuItemProps> = ({ onClick, children, className = '' }) => (
-  <Button 
-    variant="flat"
-    onClick={onClick} 
-    className={`w-full text-sm py-2 rounded-none hover:bg-dark-700 transition-colors ${className}`}
+const MenuItem: React.FC<MenuItemProps> = ({ children, className = '' }) => (
+  <div 
+    className={`w-full ${className}`}
   >
     {children}
-  </Button>
+  </div>
 );
 
-export const SidebarMenu: React.FC<SidebarMenuProps> = ({ isOpen, onCreateCampaign, onClose }) => {
+export const SidebarMenu: React.FC<SidebarMenuProps> = observer(({ isOpen, onCreateCampaign, onClose }) => {
   const menuRef = useRef<HTMLDivElement>(null);
+
+  const handleLogout = useCallback(async () => {
+    await campaignStore.logout();
+    onClose();
+  }, [onClose]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -62,11 +67,18 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = ({ isOpen, onCreateCampai
           <MenuItem onClick={onCreateCampaign} className="sm:hidden">
             Create Campaign
           </MenuItem>
-          <div className="py-2">
+          <MenuItem onClick={() => {}}>
             <ConnectWallet />
-          </div>
+          </MenuItem>
+          {campaignStore.address && (
+            <MenuItem onClick={handleLogout} className="text-red-500">
+              <Button variant="flat" className="w-full sm:w-auto text-red-500" onClick={handleLogout}>
+                Logout
+              </Button>
+            </MenuItem>
+          )}
         </div>
       </div>
     </>
   );
-}; 
+}); 
