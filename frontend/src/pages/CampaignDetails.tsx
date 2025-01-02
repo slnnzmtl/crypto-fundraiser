@@ -8,6 +8,8 @@ import { useError } from '../hooks/useError';
 import { ErrorType } from '../types/error';
 import CampaignDetailsPlaceholder from '../components/CampaignDetailsPlaceholder';
 import { pluralize } from '../utils/format';
+import ImagePlaceholder from '../components/ui/ImagePlaceholder';
+import PageTransition from '../components/PageTransition';
 
 const CampaignDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -53,15 +55,9 @@ const CampaignDetails: React.FC = () => {
         }
       } catch (error) {
         if (error instanceof Error) {
-          if (error.message === ErrorType.METAMASK) {
-            showError(ErrorType.METAMASK);
-          } else if (error.message === ErrorType.NETWORK) {
-            showError(ErrorType.NETWORK);
-          } else if (error.message === ErrorType.USER_REJECTED) {
-            showError(ErrorType.USER_REJECTED);
-          } else {
-            showError(ErrorType.NETWORK);
-          }
+          showError(error.message as ErrorType);
+        } else {
+          showError(ErrorType.NETWORK);
         }
       } finally {
         setIsLoading(false);
@@ -75,7 +71,11 @@ const CampaignDetails: React.FC = () => {
   const donations = id ? campaignStore.donations[parseInt(id)] || [] : [];
 
   if (isLoading) {
-    return <CampaignDetailsPlaceholder />;
+    return (
+      <PageTransition>
+        <CampaignDetailsPlaceholder />
+      </PageTransition>
+    );
   }
 
   if (!campaign) {
@@ -101,22 +101,9 @@ const CampaignDetails: React.FC = () => {
       setAmountError(null);
     } catch (error) {
       if (error instanceof Error) {
-        if (error.message === ErrorType.METAMASK) {
-          showError(ErrorType.METAMASK);
-        } else if (error.message === ErrorType.NETWORK) {
-          showError(ErrorType.NETWORK);
-        } else if (error.message === ErrorType.USER_REJECTED) {
-          showError(ErrorType.USER_REJECTED);
-        } else {
-          // Handle contract revert errors
-          const errorMessage = error.message.toLowerCase();
-          if (errorMessage.includes('donation must be greater than 0')) {
-            setAmountError('Amount must be greater than 0');
-          } else {
-            console.error('Failed to donate:', error);
-            showError(ErrorType.NETWORK);
-          }
-        }
+        showError(error.message as ErrorType);
+      } else {
+        showError(ErrorType.NETWORK);
       }
     } finally {
       setIsSubmitting(false);
@@ -134,16 +121,9 @@ const CampaignDetails: React.FC = () => {
       await campaignStore.completeCampaign(campaign.id);
     } catch (error) {
       if (error instanceof Error) {
-        if (error.message === ErrorType.METAMASK) {
-          showError(ErrorType.METAMASK);
-        } else if (error.message === ErrorType.NETWORK) {
-          showError(ErrorType.NETWORK);
-        } else if (error.message === ErrorType.USER_REJECTED) {
-          showError(ErrorType.USER_REJECTED);
-        } else {
-          console.error('Failed to complete campaign:', error);
-          showError(ErrorType.NETWORK);
-        }
+        showError(error.message as ErrorType);
+      } else {
+        showError(ErrorType.NETWORK);
       }
     } finally {
       setIsSubmitting(false);
@@ -164,147 +144,194 @@ const CampaignDetails: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4">
-      <div className="grid gap-6 md:grid-cols-[2fr,1fr]">
-        <div className="space-y-6">
-          {campaign.image && campaign.image.trim() && (
-            <div className="aspect-video w-full bg-dark-900">
-              <img 
-                src={campaign.image} 
-                alt={campaign.title} 
-                className="w-full h-full object-cover"
-              />
-            </div>
-          )}
-
-          <Card className="space-y-4">
-            <div className="flex justify-between items-start">
-              <h1 className="text-2xl font-bold">{campaign.title}</h1>
-              <div className="text-sm">
-                <span className={`px-2 py-1 rounded ${campaign.claimed ? 'bg-green-600' : 'bg-blue-600'}`}>
-                  {campaign.claimed ? 'Completed' : 'Active'}
-                </span>
-              </div>
-            </div>
-            <p className="text-gray-400">{campaign.description}</p>
-            <div>
-              <div className="flex justify-between text-sm mb-2">
-                <span className="text-gray-400">Progress</span>
-                <span className="text-gray-400">
-                  {campaign.pledged} / {campaign.goal} ETH
-                </span>
-              </div>
-              <div className="w-full bg-dark-700 rounded-full h-2">
-                <div 
-                  className="bg-blue-600 h-full rounded-full" 
-                  style={{ width: `${progress}%` }}
+    <PageTransition>
+      <div className="max-w-4xl mx-auto py-8 px-4">
+        <div className="grid gap-6 md:grid-cols-[2fr,1fr]">
+          <div className="space-y-6">
+            <div className="aspect-video w-full">
+              {campaign.image && campaign.image.trim() ? (
+                <img 
+                  src={campaign.image} 
+                  alt={campaign.title} 
+                  className="w-full h-full object-cover rounded-lg"
                 />
-              </div>
+              ) : (
+                <ImagePlaceholder className="rounded-lg" />
+              )}
             </div>
-          </Card>
 
-          <DonationList donations={donations} />
-        </div>
-
-        <div className="space-y-6">
-          <Card className="space-y-6">
-            {canDonate && !campaign.claimed && (
-              <form onSubmit={handleDonate}>
-                <div className="space-y-4">
-                  <Input
-                    type="number"
-                    value={amount}
-                    onChange={handleAmountChange}
-                    min="0"
-                    step="0.00001"
-                    required
-                    placeholder="Amount in ETH"
-                    error={amountError}
-                    label="Amount"
-                  />
-                  <Button
-                    type="submit"
-                    isLoading={isSubmitting}
-                    disabled={!campaignStore.address || !!amountError}
-                    className="w-full"
-                  >
-                    {!campaignStore.address 
-                      ? 'Connect wallet to donate'
-                      : isSubmitting 
-                        ? 'Processing...' 
-                        : 'Donate'}
-                  </Button>
+            <Card className="space-y-4">
+              <div className="flex justify-between items-start">
+                <h1 className="text-2xl font-bold">{campaign.title}</h1>
+                <div className="text-sm">
+                  <span className={`px-2 py-1 rounded ${
+                    campaign.claimed 
+                      ? 'bg-green-600/20 text-green-500' 
+                      : campaign.endAt.getTime() < Date.now() 
+                        ? 'bg-red-600/20 text-red-500'
+                        : 'bg-blue-600/20 text-blue-500'
+                  }`}>
+                    {campaign.claimed 
+                      ? 'Completed' 
+                      : campaign.endAt.getTime() < Date.now() 
+                        ? 'Ended'
+                        : 'Active'}
+                  </span>
                 </div>
-              </form>
+              </div>
+              <p className="text-gray-400">{campaign.description}</p>
+              <div>
+                <div className="flex justify-between text-sm mb-2">
+                  <span className="text-gray-400">Progress</span>
+                  <span className="text-gray-400">
+                    {campaign.pledged} / {campaign.goal} ETH
+                  </span>
+                </div>
+                <div className="w-full bg-dark-700 rounded-full h-2">
+                  <div 
+                    className={`h-full rounded-full ${
+                      campaign.claimed 
+                        ? 'bg-green-600' 
+                        : campaign.endAt.getTime() < Date.now() 
+                          ? 'bg-red-600'
+                          : 'bg-blue-600'
+                    }`}
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+              </div>
+            </Card>
+
+            <DonationList donations={donations} />
+          </div>
+
+          <div className="space-y-6">
+            <Card className="space-y-6">
+              {canDonate && !campaign.claimed && campaign.endAt.getTime() > Date.now() && (
+                <form onSubmit={handleDonate}>
+                  <div className="space-y-4">
+                    <Input
+                      type="number"
+                      value={amount}
+                      onChange={handleAmountChange}
+                      min="0"
+                      step="0.00001"
+                      required
+                      placeholder="Amount in ETH"
+                      error={amountError}
+                      label="Amount"
+                    />
+                    <Button
+                      type="submit"
+                      isLoading={isSubmitting}
+                      disabled={!campaignStore.address || !!amountError}
+                      className="w-full"
+                    >
+                      {!campaignStore.address 
+                        ? 'Connect wallet to donate'
+                        : isSubmitting 
+                          ? 'Processing...' 
+                          : 'Donate'}
+                    </Button>
+                  </div>
+                </form>
+              )}
+
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Campaign ID</span>
+                  <span className="text-white">#{campaign.id}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Creator</span>
+                  <span className="text-white truncate ml-2 max-w-[200px]" title={campaign.creator}>
+                    {campaign.creator}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Owner</span>
+                  <span className="text-white truncate ml-2 max-w-[200px]" title={campaign.owner}>
+                    {campaign.owner}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Goal</span>
+                  <span className="text-white">{campaign.goal} ETH</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Pledged</span>
+                  <span className="text-white">{campaign.pledged} ETH</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Start Date</span>
+                  <span className="text-white">
+                    {campaign.startAt.toLocaleDateString()}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">End Date</span>
+                  <span className="text-white">
+                    {campaign.endAt.toLocaleDateString()}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Time Left</span>
+                  <span className={`text-white ${
+                    campaign.claimed 
+                      ? 'text-green-500' 
+                      : campaign.endAt.getTime() < Date.now() 
+                        ? 'text-red-500'
+                        : ''
+                  }`}>
+                    {campaign.claimed 
+                      ? 'Completed' 
+                      : getDaysLeft(campaign.endAt)}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Status</span>
+                  <span className={`text-white ${
+                    campaign.claimed 
+                      ? 'text-green-500' 
+                      : campaign.endAt.getTime() < Date.now() 
+                        ? 'text-red-500'
+                        : 'text-blue-500'
+                  }`}>
+                    {campaign.claimed 
+                      ? 'Completed' 
+                      : campaign.endAt.getTime() < Date.now() 
+                        ? 'Ended'
+                        : 'Active'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Auto Complete</span>
+                  <span className="text-white">
+                    {campaign.autoComplete ? 'Yes' : 'No'}
+                  </span>
+                </div>
+              </div>
+            </Card>
+
+            {isOwner && !campaign.claimed && (
+              <Button
+                onClick={handleComplete}
+                isLoading={isSubmitting}
+                disabled={!campaignStore.address || (daysLeft > 0 && Number(campaign.pledged) < Number(campaign.goal))}
+                className="w-full"
+                variant={daysLeft > 0 && Number(campaign.pledged) < Number(campaign.goal) ? 'secondary' : 'primary'}
+              >
+                {daysLeft > 0 
+                  ? Number(campaign.pledged) >= Number(campaign.goal)
+                    ? 'Complete Campaign'
+                    : `${pluralize(daysLeft, 'day')} until completion` 
+                  : 'Complete Campaign'}
+              </Button>
             )}
-
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-gray-400">Campaign ID</span>
-                <span className="text-white">#{campaign.id}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">Creator</span>
-                <span className="text-white truncate ml-2 max-w-[200px]" title={campaign.creator}>
-                  {campaign.creator}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">Owner</span>
-                <span className="text-white truncate ml-2 max-w-[200px]" title={campaign.owner}>
-                  {campaign.owner}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">Goal</span>
-                <span className="text-white">{campaign.goal} ETH</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">Pledged</span>
-                <span className="text-white">{campaign.pledged} ETH</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">Start Date</span>
-                <span className="text-white">
-                  {campaign.startAt.toLocaleDateString()}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">End Date</span>
-                <span className="text-white">
-                  {campaign.endAt.toLocaleDateString()}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">Time Left</span>
-                <span className="text-white">
-                  {getDaysLeft(campaign.endAt)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">Status</span>
-                <span className="text-white">
-                  {campaign.claimed ? 'Completed' : 'Active'}
-                </span>
-              </div>
-            </div>
-          </Card>
-
-          {isOwner && !campaign.claimed && (
-            <Button
-              onClick={handleComplete}
-              isLoading={isSubmitting}
-              disabled={!campaignStore.address || daysLeft > 0}
-              className="w-full"
-            >
-              {daysLeft > 0 
-                ? `${pluralize(daysLeft, 'day')} until completion` 
-                : 'Complete Campaign'}
-            </Button>
-          )}
+          </div>
         </div>
       </div>
-    </div>
+    </PageTransition>
   );
 };
 
