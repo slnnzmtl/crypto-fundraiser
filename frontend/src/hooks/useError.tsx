@@ -1,6 +1,5 @@
 import React, { createContext, useContext, ReactNode, useState, useCallback } from 'react';
 import { ErrorType, ErrorConfig } from '../types/error';
-import ErrorPage from '../components/ErrorPage';
 import MetaMaskLogo from '../components/icons/MetaMaskLogo';
 
 interface ErrorContextType {
@@ -21,11 +20,28 @@ const DEFAULT_ERRORS: Record<ErrorType, Omit<ErrorConfig, 'type'>> = {
     }
   },
   [ErrorType.NETWORK]: {
-    title: 'Network Error',
-    description: 'Unable to connect to the network. Please check your internet connection.',
+    title: 'Network Connection Error',
+    description: 'Please make sure you are:\n1. Connected to the Sepolia test network in MetaMask\n2. Have a stable internet connection',
     action: {
-      label: 'Try Again',
-      onClick: () => window.location.reload()
+      label: 'Switch to Sepolia',
+      onClick: () => {
+        if (window.ethereum) {
+          window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: '0xaa36a7' }], // Sepolia chainId
+          }).catch(() => window.location.reload());
+        } else {
+          window.location.reload();
+        }
+      }
+    }
+  },
+  [ErrorType.INSUFFICIENT_FUNDS]: {
+    title: 'Insufficient Funds',
+    description: 'You don\'t have enough ETH in your wallet to complete this transaction. You need ETH for:\n1. The donation amount\n2. Gas fees',
+    action: {
+      label: 'Get Sepolia ETH',
+      href: 'https://sepoliafaucet.com/'
     }
   },
   [ErrorType.NOT_FOUND]: {
@@ -51,15 +67,80 @@ const DEFAULT_ERRORS: Record<ErrorType, Omit<ErrorConfig, 'type'>> = {
       label: 'Try Again',
       onClick: () => window.location.reload()
     }
+  },
+  [ErrorType.METAMASK_PENDING]: {
+    title: 'MetaMask Request Pending',
+    description: 'Please check MetaMask for a pending connection request. Click the MetaMask icon in your browser extensions to view the request.',
+    action: {
+      label: 'Try Again',
+      onClick: () => window.location.reload()
+    }
+  },
+  [ErrorType.GET_CAMPAIGNS_FAILED]: {
+    title: 'Failed to Load Campaigns',
+    description: 'Unable to load campaigns from the blockchain. This could be due to network issues or contract problems.',
+    action: {
+      label: 'Try Again',
+      onClick: () => window.location.reload()
+    }
   }
 };
 
 const ERROR_ICONS: Record<ErrorType, ReactNode> = {
-  [ErrorType.METAMASK]: <MetaMaskLogo className="w-full h-full" />,
-  [ErrorType.NETWORK]: <div className="w-full h-full text-red-500">🌐</div>,
-  [ErrorType.NOT_FOUND]: <div className="w-full h-full text-yellow-500">🔍</div>,
-  [ErrorType.UNAUTHORIZED]: <div className="w-full h-full text-red-500">🔒</div>,
-  [ErrorType.USER_REJECTED]: <div className="w-full h-full text-yellow-500">❌</div>
+  [ErrorType.METAMASK]: <MetaMaskLogo className="w-6 h-6" />,
+  [ErrorType.NETWORK]: <div className="w-6 h-6 text-red-500">🌐</div>,
+  [ErrorType.NOT_FOUND]: <div className="w-6 h-6 text-yellow-500">🔍</div>,
+  [ErrorType.UNAUTHORIZED]: <div className="w-6 h-6 text-red-500">🔒</div>,
+  [ErrorType.USER_REJECTED]: <div className="w-6 h-6 text-yellow-500">❌</div>,
+  [ErrorType.METAMASK_PENDING]: <MetaMaskLogo className="w-6 h-6" />,
+  [ErrorType.INSUFFICIENT_FUNDS]: <div className="w-6 h-6 text-red-500">💰</div>,
+  [ErrorType.GET_CAMPAIGNS_FAILED]: <div className="w-6 h-6 text-red-500">⚠️</div>
+};
+
+const ErrorNotification: React.FC<{ error: ErrorConfig; onClose: () => void }> = ({ error, onClose }) => {
+  return (
+    <div className="fixed top-4 right-4 z-50 max-w-md bg-dark-800 rounded-lg shadow-lg p-4 border border-dark-700 animate-slide-in">
+      <div className="flex items-start gap-3">
+        <div className="flex-shrink-0">
+          {ERROR_ICONS[error.type]}
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="text-sm font-medium text-white">{error.title}</h3>
+          <p className="mt-1 text-sm text-gray-400">{error.description}</p>
+          {error.action && (
+            <div className="mt-3">
+              {error.action.href ? (
+                <a
+                  href={error.action.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-blue-500 hover:text-blue-400"
+                >
+                  {error.action.label}
+                </a>
+              ) : (
+                <button
+                  onClick={error.action.onClick}
+                  className="text-sm text-blue-500 hover:text-blue-400"
+                >
+                  {error.action.label}
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+        <button
+          onClick={onClose}
+          className="flex-shrink-0 text-gray-400 hover:text-gray-300"
+        >
+          <span className="sr-only">Close</span>
+          <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
 };
 
 export const ErrorProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -73,20 +154,10 @@ export const ErrorProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     clearError
   };
 
-  if (error) {
-    return (
-      <ErrorPage
-        icon={ERROR_ICONS[error.type]}
-        title={error.title}
-        description={error.description}
-        action={error.action}
-      />
-    );
-  }
-
   return (
     <ErrorContext.Provider value={value}>
       {children}
+      {error && <ErrorNotification error={error} onClose={clearError} />}
     </ErrorContext.Provider>
   );
 };
@@ -99,6 +170,11 @@ export const useError = () => {
 
   const showError = useCallback((type: ErrorType, customConfig?: Partial<Omit<ErrorConfig, 'type'>>) => {
     const defaultConfig = DEFAULT_ERRORS[type];
+    console.log({
+      type,
+      defaultConfig,
+      customConfig
+    })
     context.setError({
       type,
       ...defaultConfig,

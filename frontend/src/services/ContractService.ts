@@ -2,6 +2,12 @@ import { ethers } from 'ethers';
 import { Campaign, CampaignInput } from '../types/campaign';
 import { ErrorType } from '../types/error';
 
+declare global {
+  interface Window {
+    ethereum?: ethers.Eip1193Provider;
+  }
+}
+
 const CONTRACT_ADDRESS = process.env.REACT_APP_CONTRACT_ADDRESS;
 
 // Check contract address on initialization
@@ -149,6 +155,8 @@ const CONTRACT_ABI = [
 class ContractService {
   private provider: ethers.BrowserProvider | null = null;
   private contract: ethers.Contract | null = null;
+  private connectionPromise: Promise<string> | null = null;
+  private connectionTimeout: NodeJS.Timeout | null = null;
 
   private validateContractAddress(): string {
     if (!CONTRACT_ADDRESS) {
@@ -157,26 +165,85 @@ class ContractService {
     return CONTRACT_ADDRESS;
   }
 
+  private clearConnectionState() {
+    this.connectionPromise = null;
+    if (this.connectionTimeout) {
+      clearTimeout(this.connectionTimeout);
+      this.connectionTimeout = null;
+    }
+  }
+
   async connect(): Promise<string> {
     if (!window.ethereum) {
       throw new Error(ErrorType.METAMASK);
     }
 
-    try {
-      this.provider = new ethers.BrowserProvider(window.ethereum);
-      const signer = await this.provider.getSigner();
-      const contractAddress = this.validateContractAddress();
-      
-      this.contract = new ethers.Contract(
-        contractAddress,
-        CONTRACT_ABI,
-        signer
-      );
+    // If there's already a connection attempt in progress, return it
+    if (this.connectionPromise) {
+      return this.connectionPromise;
+    }
 
-      return signer.getAddress();
+    try {
+      // Create a new connection promise with timeout
+      this.connectionPromise = (async () => {
+        try {
+          // Set a timeout to clear the connection state if it takes too long
+          this.connectionTimeout = setTimeout(() => {
+            this.clearConnectionState();
+          }, 30000); // 30 seconds timeout
+
+          // Ensure window.ethereum is defined and create provider
+          const ethereum = window.ethereum;
+          if (!ethereum) {
+            throw new Error(ErrorType.METAMASK);
+          }
+          
+          // First check if we're already connected
+          const accounts = await ethereum.request({ method: 'eth_accounts' });
+          if (!accounts || accounts.length === 0) {
+            // If not connected, request connection
+            await ethereum.request({ method: 'eth_requestAccounts' });
+          }
+          
+          this.provider = new ethers.BrowserProvider(ethereum);
+          const signer = await this.provider.getSigner();
+          const contractAddress = this.validateContractAddress();
+          
+          this.contract = new ethers.Contract(
+            contractAddress,
+            CONTRACT_ABI,
+            signer
+          );
+
+          // Clear the timeout since we succeeded
+          if (this.connectionTimeout) {
+            clearTimeout(this.connectionTimeout);
+            this.connectionTimeout = null;
+          }
+
+          return signer.getAddress();
+        } catch (error) {
+          console.log('Failed to connect:', error);
+          // Clear the connection state on error
+          this.clearConnectionState();
+          if (error instanceof Error) {
+            if (error.message.includes('user rejected')) {
+              throw new Error(ErrorType.USER_REJECTED);
+            }
+            // Handle the specific error code for multiple requests
+            if (error.message.includes('-32002')) {
+              throw new Error(ErrorType.METAMASK_PENDING);
+            }
+          }
+          throw error;
+        }
+      })();
+
+      return await this.connectionPromise;
     } catch (error) {
-      console.error('Failed to connect:', error);
-      throw new Error(ErrorType.NETWORK);
+      // Clear the connection state on error
+      this.clearConnectionState();
+      throw error;
     }
   }
 
@@ -186,26 +253,37 @@ class ContractService {
     }
 
     try {
-      this.provider = new ethers.BrowserProvider(window.ethereum);
-      const accounts = await this.provider.listAccounts();
-      
-      if (accounts.length > 0) {
-        const signer = await this.provider.getSigner();
-        const contractAddress = this.validateContractAddress();
-        
-        this.contract = new ethers.Contract(
-          contractAddress,
-          CONTRACT_ABI,
-          signer
-        );
-
-        return accounts[0].address;
+      // If there's a connection in progress, wait for it
+      if (this.connectionPromise) {
+        return await this.connectionPromise;
       }
+
+      const ethereum = window.ethereum;
+      if (!ethereum) {
+        throw new Error(ErrorType.METAMASK);
+      }
+
+      // Check if already connected without prompting
+      const accounts = await ethereum.request({ method: 'eth_accounts' });
+      if (!accounts || accounts.length === 0) {
+        return null;
+      }
+
+      this.provider = new ethers.BrowserProvider(ethereum);
+      const signer = await this.provider.getSigner();
+      const contractAddress = this.validateContractAddress();
       
-      return null;
+      this.contract = new ethers.Contract(
+        contractAddress,
+        CONTRACT_ABI,
+        signer
+      );
+
+      return accounts[0];
     } catch (error) {
       console.error('Failed to check connection:', error);
-      throw new Error(ErrorType.NETWORK);
+      // Don't throw on check connection errors, just return null
+      return null;
     }
   }
 
@@ -243,7 +321,7 @@ class ContractService {
       return campaigns;
     } catch (error) {
       console.error('Failed to get campaigns:', error);
-      throw new Error(ErrorType.NETWORK);
+      throw new Error(ErrorType.GET_CAMPAIGNS_FAILED);
     }
   }
 
@@ -313,8 +391,16 @@ class ContractService {
       return Number(count) - 1;
     } catch (error) {
       console.error('Failed to create campaign:', error);
-      if (error instanceof Error && error.message.includes('user rejected')) {
-        throw new Error(ErrorType.USER_REJECTED);
+      if (error instanceof Error) {
+        if (error.message.includes('user rejected')) {
+          throw new Error(ErrorType.USER_REJECTED);
+        }
+        if (error.message.includes('insufficient funds')) {
+          throw new Error(ErrorType.INSUFFICIENT_FUNDS);
+        }
+        if (error.message.includes('-32002')) {
+          throw new Error(ErrorType.METAMASK_PENDING);
+        }
       }
       throw new Error(ErrorType.NETWORK);
     }
@@ -331,8 +417,16 @@ class ContractService {
       await tx.wait();
     } catch (error) {
       console.error('Failed to donate:', error);
-      if (error instanceof Error && error.message.includes('user rejected')) {
-        throw new Error(ErrorType.USER_REJECTED);
+      if (error instanceof Error) {
+        if (error.message.includes('user rejected')) {
+          throw new Error(ErrorType.USER_REJECTED);
+        }
+        if (error.message.includes('insufficient funds')) {
+          throw new Error(ErrorType.INSUFFICIENT_FUNDS);
+        }
+        if (error.message.includes('-32002')) {
+          throw new Error(ErrorType.METAMASK_PENDING);
+        }
       }
       throw new Error(ErrorType.NETWORK);
     }
@@ -392,8 +486,16 @@ class ContractService {
       await tx.wait();
     } catch (error) {
       console.error('Failed to complete campaign:', error);
-      if (error instanceof Error && error.message.includes('user rejected')) {
-        throw new Error(ErrorType.USER_REJECTED);
+      if (error instanceof Error) {
+        if (error.message.includes('user rejected')) {
+          throw new Error(ErrorType.USER_REJECTED);
+        }
+        if (error.message.includes('insufficient funds')) {
+          throw new Error(ErrorType.INSUFFICIENT_FUNDS);
+        }
+        if (error.message.includes('-32002')) {
+          throw new Error(ErrorType.METAMASK_PENDING);
+        }
       }
       throw new Error(ErrorType.NETWORK);
     }

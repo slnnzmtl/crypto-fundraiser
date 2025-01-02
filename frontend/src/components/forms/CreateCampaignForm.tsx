@@ -4,82 +4,84 @@ import { Input, TextArea, Button } from '../ui/primitives';
 import { campaignStore } from '../../stores/CampaignStore';
 import { CampaignInput } from '../../types/campaign';
 import { pluralize } from '../../utils/format';
+import { useError } from '../../hooks/useError';
+import { ErrorType } from '../../types/error';
 
 interface Props {
   onSuccess: () => void;
 }
 
-export default function CreateCampaignForm({ onSuccess }: Props) {
-  const navigate = useNavigate();
-  const [formData, setFormData] = useState<CampaignInput>({
-    title: '',
-    description: '',
-    goal: '',
-    durationInDays: 30,
-    image: '',
-    autoComplete: false
-  });
+const initialFormData: CampaignInput = {
+  title: '',
+  description: '',
+  goal: '',
+  durationInDays: 30,
+  image: '',
+  autoComplete: false,
+};
 
+const CreateCampaignForm: React.FC<Props> = ({ onSuccess }) => {
+  const navigate = useNavigate();
+  const { showError } = useError();
+  const [formData, setFormData] = useState(initialFormData);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    
-    if (name === 'goal') {
-      // Allow numbers and one decimal point
-      const numericValue = value.replace(/[^\d.]/g, '');
-      
-      // Handle decimal points
-      const parts = numericValue.split('.');
-      let sanitizedValue = parts[0];
-      if (parts.length > 1) {
-        // Keep only first decimal point and up to 4 decimal places
-        sanitizedValue += '.' + parts[1].slice(0, 4);
-      }
-      
-      setFormData(prev => ({
-        ...prev,
-        [name]: sanitizedValue
-      }));
-      return;
-    }
+  const handleChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      const { name, value } = e.target;
 
-    if (name === 'durationInDays') {
-      // Only allow positive integers
-      const intValue = parseInt(value) || 30;
-      setFormData(prev => ({
-        ...prev,
-        [name]: Math.max(1, intValue)
-      }));
-      return;
-    }
+      setFormData((prev) => {
+        if (name === 'goal') {
+          const numericValue = value.replace(/[^\d.]/g, '');
+          const parts = numericValue.split('.');
+          return {
+            ...prev,
+            [name]: parts.length > 1 ? `${parts[0]}.${parts[1].slice(0, 4)}` : parts[0],
+          };
+        }
 
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  }, []);
+        if (name === 'durationInDays') {
+          const intValue = parseInt(value, 10) || 30;
+          return { ...prev, [name]: Math.max(1, intValue) };
+        }
+
+        return { ...prev, [name]: value };
+      });
+    },
+    []
+  );
 
   const handleToggleAutoComplete = useCallback(() => {
-    setFormData(prev => ({ ...prev, autoComplete: !prev.autoComplete }));
+    setFormData((prev) => ({ ...prev, autoComplete: !prev.autoComplete }));
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (isSubmitting) return;
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (isSubmitting) return;
 
-    try {
       setIsSubmitting(true);
-      const campaignId = await campaignStore.createCampaign(formData);
-      onSuccess();
-      // Redirect to the newly created campaign
-      navigate(`/campaign/${campaignId}`);
-    } catch (error) {
-      console.error('Failed to create campaign:', error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+      try {
+        const campaignId = await campaignStore.createCampaign(formData);
+        onSuccess();
+        navigate(`/campaign/${campaignId}`);
+      } catch (error) {
+        console.error('Failed to create campaign:', error);
+        if (error instanceof Error) {
+          const errorMap: Record<string, ErrorType> = {
+            [ErrorType.METAMASK]: ErrorType.METAMASK,
+            [ErrorType.NETWORK]: ErrorType.NETWORK,
+            [ErrorType.USER_REJECTED]: ErrorType.USER_REJECTED,
+            [ErrorType.METAMASK_PENDING]: ErrorType.METAMASK_PENDING,
+          };
+          showError(errorMap[error.message] || ErrorType.NETWORK);
+        }
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [formData, isSubmitting, navigate, onSuccess, showError]
+  );
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-6">
@@ -109,13 +111,9 @@ export default function CreateCampaignForm({ onSuccess }: Props) {
           value={formData.goal}
           onChange={handleChange}
           label="Goal Amount"
-          min="0"
-          step="any"
           required
         />
-        <div className="bg-dark-700 rounded-lg px-4 flex items-center text-gray-400">
-          ETH
-        </div>
+        <div className="bg-dark-700 rounded-lg px-4 flex items-center text-gray-400">ETH</div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -127,7 +125,6 @@ export default function CreateCampaignForm({ onSuccess }: Props) {
           value={formData.durationInDays}
           onChange={handleChange}
           label="Duration"
-          min="1"
           required
         />
         <div className="bg-dark-700 rounded-lg px-4 flex items-center text-gray-400">
@@ -157,18 +154,11 @@ export default function CreateCampaignForm({ onSuccess }: Props) {
         </label>
       </div>
 
-      <Button
-        type="submit"
-        className="h-12"
-        isLoading={isSubmitting}
-        disabled={!campaignStore.address}
-      >
-        {!campaignStore.address 
-          ? 'Connect wallet to create'
-          : isSubmitting 
-            ? 'Creating...' 
-            : 'Create Campaign'}
+      <Button type="submit" className="h-12" isLoading={isSubmitting}>
+        {isSubmitting ? 'Creating...' : 'Create Campaign'}
       </Button>
     </form>
   );
-}
+};
+
+export default CreateCampaignForm;
