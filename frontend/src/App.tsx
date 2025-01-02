@@ -1,45 +1,34 @@
-import React, { useEffect } from 'react';
-import { Routes, Route } from 'react-router-dom';
-import NavigationMenu from './components/ui/NavigationMenu';
+import React from 'react';
+import { Routes, Route, useLocation } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
 import CampaignList from './pages/CampaignList';
 import CampaignDetails from './pages/CampaignDetails';
-import Modals from './components/modals';
-import { ErrorProvider, useError } from './hooks/useError';
+import { ErrorProvider } from './hooks/useError';
 import { ModalProvider } from './hooks/useModal';
-import { ErrorType } from './types/error';
+import NavigationMenu from './components/ui/NavigationMenu';
+import Modals from './components/modals';
 
-const AppContent: React.FC = () => {
-  const { showError } = useError();
+function App() {
+  const location = useLocation();
 
-  useEffect(() => {
-    if (!window.ethereum) {
-      showError(ErrorType.METAMASK);
-      return;
-    }
-  }, [showError]);
-
-  return (
-    <div className="min-h-screen bg-dark-900 text-white">
-      <NavigationMenu />
-      <main className="container mx-auto px-4">
-        <Routes>
-          <Route path="/" element={<CampaignList />} />
-          <Route path="/campaign/:id" element={<CampaignDetails />} />
-        </Routes>
-      </main>
-      <Modals />
-    </div>
-  );
-};
-
-const App: React.FC = () => {
   return (
     <ErrorProvider>
       <ModalProvider>
-        <AppContent />
+        <div className="min-h-screen bg-dark-900 text-white">
+          <NavigationMenu />
+          <main className="container mx-auto px-4">
+            <AnimatePresence mode="wait">
+              <Routes location={location} key={location.pathname}>
+                <Route path="/" element={<CampaignList />} />
+                <Route path="/campaign/:id" element={<CampaignDetails />} />
+              </Routes>
+            </AnimatePresence>
+          </main>
+          <Modals />
+        </div>
       </ModalProvider>
     </ErrorProvider>
   );
-};
+}
 
 export default App;
