@@ -66,7 +66,6 @@ export class CampaignStore {
       progressStore.finish();
     } catch (error) {
       progressStore.reset();
-      console.error('Failed to connect:', error);
       if (error instanceof Error) {
         throw error;
       }
@@ -90,11 +89,10 @@ export class CampaignStore {
       progressStore.finish();
     } catch (error) {
       progressStore.reset();
-      console.error('Failed to load campaigns:', error);
       if (error instanceof Error) {
         throw error;
       }
-      throw new Error(ErrorType.NETWORK);
+      throw new Error(ErrorType.GET_CAMPAIGNS_FAILED);
     } finally {
       this.setLoading(false);
     }
@@ -115,7 +113,6 @@ export class CampaignStore {
       return campaignId;
     } catch (error) {
       progressStore.reset();
-      console.error('Failed to create campaign:', error);
       if (error instanceof Error) {
         throw error;
       }
@@ -142,7 +139,6 @@ export class CampaignStore {
       progressStore.finish();
     } catch (error) {
       progressStore.reset();
-      console.error('Failed to donate:', error);
       if (error instanceof Error) {
         throw error;
       }
@@ -163,7 +159,6 @@ export class CampaignStore {
       progressStore.finish();
     } catch (error) {
       progressStore.reset();
-      console.error('Failed to load donations:', error);
       if (error instanceof Error) {
         throw error;
       }
@@ -185,7 +180,6 @@ export class CampaignStore {
       progressStore.finish();
     } catch (error) {
       progressStore.reset();
-      console.error('Failed to complete campaign:', error);
       if (error instanceof Error) {
         throw error;
       }

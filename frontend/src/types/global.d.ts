@@ -3,14 +3,10 @@ import { ethers } from "ethers";
 
 declare global {
   interface Window {
-    ethereum?: MetaMaskInpageProvider & {
-      request: (...args: any[]) => Promise<any>;
-      on: (...args: any[]) => void;
-      removeListener: (...args: any[]) => void;
-      selectedAddress: string | null;
-      networkVersion: string;
-      _metamask: {
-        isUnlocked: () => Promise<boolean>;
+    ethereum?: ethers.Eip1193Provider & {
+      _metamask?: {
+        openPopup?: () => void;
+        isUnlocked?: () => Promise<boolean>;
       };
     };
   }
