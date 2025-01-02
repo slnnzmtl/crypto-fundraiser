@@ -29,11 +29,15 @@ const CONTRACT_ABI = [
     "inputs": [{"type": "uint256"}],
     "name": "campaigns",
     "outputs": [
-      {"internalType": "address", "name": "owner", "type": "address"},
+      {"internalType": "address payable", "name": "owner", "type": "address"},
+      {"internalType": "string", "name": "title", "type": "string"},
+      {"internalType": "string", "name": "description", "type": "string"},
+      {"internalType": "string", "name": "image", "type": "string"},
       {"internalType": "uint256", "name": "goal", "type": "uint256"},
-      {"internalType": "uint256", "name": "balance", "type": "uint256"},
       {"internalType": "uint256", "name": "deadline", "type": "uint256"},
-      {"internalType": "bool", "name": "completed", "type": "bool"}
+      {"internalType": "uint256", "name": "balance", "type": "uint256"},
+      {"internalType": "bool", "name": "completed", "type": "bool"},
+      {"internalType": "bool", "name": "autoComplete", "type": "bool"}
     ],
     "stateMutability": "view",
     "type": "function"
@@ -42,9 +46,10 @@ const CONTRACT_ABI = [
     "inputs": [
       {"internalType": "string", "name": "title", "type": "string"},
       {"internalType": "string", "name": "description", "type": "string"},
-      {"internalType": "uint256", "name": "goal", "type": "uint256"},
+      {"internalType": "uint256", "name": "goalInWei", "type": "uint256"},
       {"internalType": "uint256", "name": "durationInDays", "type": "uint256"},
-      {"internalType": "string", "name": "image", "type": "string"}
+      {"internalType": "string", "name": "image", "type": "string"},
+      {"internalType": "bool", "name": "autoComplete", "type": "bool"}
     ],
     "name": "createCampaign",
     "outputs": [],
@@ -52,11 +57,92 @@ const CONTRACT_ABI = [
     "type": "function"
   },
   {
-    "inputs": [{"internalType": "uint256", "name": "campaignId", "type": "uint256"}],
+    "inputs": [{"internalType": "uint256", "name": "_campaignId", "type": "uint256"}],
     "name": "donate",
     "outputs": [],
     "stateMutability": "payable",
     "type": "function"
+  },
+  {
+    "inputs": [{"internalType": "uint256", "name": "_campaignId", "type": "uint256"}],
+    "name": "completeCampaign",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "campaignId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "title",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "description",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "image",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "goal",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "deadline",
+        "type": "uint256"
+      }
+    ],
+    "name": "CampaignCreated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "campaignId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "donor",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "DonationReceived",
+    "type": "event"
   }
 ];
 
@@ -139,14 +225,15 @@ class ContractService {
             id: i,
             creator: campaign.owner,
             owner: campaign.owner,
-            title: campaign.title,
-            description: campaign.description,
-            image: campaign.image,
+            title: campaign.title || '',
+            description: campaign.description || '',
+            image: campaign.image || '',
             goal: ethers.formatEther(campaign.goal),
             pledged: ethers.formatEther(campaign.balance),
             startAt: new Date(0),
             endAt: new Date(Number(campaign.deadline) * 1000),
-            claimed: campaign.completed
+            claimed: campaign.completed,
+            autoComplete: campaign.autoComplete
           });
         } catch (error) {
           console.error(`Failed to get campaign ${i}:`, error);
@@ -166,19 +253,20 @@ class ContractService {
     }
 
     try {
-      const [owner, goal, balance, deadline, completed] = await this.contract.campaigns(id);
+      const campaign = await this.contract.campaigns(id);
       return {
         id,
-        creator: owner,
-        owner: owner,
-        title: '',
-        description: '',
-        image: '',
-        goal: ethers.formatEther(goal),
-        pledged: ethers.formatEther(balance),
+        creator: campaign.owner,
+        owner: campaign.owner,
+        title: campaign.title || '',
+        description: campaign.description || '',
+        image: campaign.image || '',
+        goal: ethers.formatEther(campaign.goal),
+        pledged: ethers.formatEther(campaign.balance),
         startAt: new Date(0),
-        endAt: new Date(Number(deadline) * 1000),
-        claimed: completed
+        endAt: new Date(Number(campaign.deadline) * 1000),
+        claimed: campaign.completed,
+        autoComplete: campaign.autoComplete
       };
     } catch (error) {
       console.error('Failed to get campaign:', error);
@@ -186,13 +274,13 @@ class ContractService {
     }
   }
 
-  async createCampaign(campaignInput: CampaignInput): Promise<void> {
+  async createCampaign(campaignInput: CampaignInput): Promise<number> {
     if (!this.contract) {
       throw new Error(ErrorType.METAMASK);
     }
 
     try {
-      const { title, description, goal, durationInDays, image } = campaignInput;
+      const { title, description, goal, durationInDays, image, autoComplete } = campaignInput;
       
       // Validate input data
       if (!title?.trim()) {
@@ -209,16 +297,20 @@ class ContractService {
       }
 
       const goalInWei = ethers.parseEther(goal.toString());
-      const deadline = Math.floor(Date.now() / 1000) + (durationInDays * 24 * 60 * 60);
       
       const tx = await this.contract.createCampaign(
         title,
         description,
         goalInWei,
-        deadline,
-        image || ''
+        durationInDays,
+        image || '',
+        autoComplete
       );
       await tx.wait();
+
+      // Get the current campaign count (new campaign ID)
+      const count = await this.contract.campaignCount();
+      return Number(count) - 1;
     } catch (error) {
       console.error('Failed to create campaign:', error);
       if (error instanceof Error && error.message.includes('user rejected')) {
@@ -239,6 +331,67 @@ class ContractService {
       await tx.wait();
     } catch (error) {
       console.error('Failed to donate:', error);
+      if (error instanceof Error && error.message.includes('user rejected')) {
+        throw new Error(ErrorType.USER_REJECTED);
+      }
+      throw new Error(ErrorType.NETWORK);
+    }
+  }
+
+  async getCampaignDonations(campaignId: number): Promise<{ donor: string; amount: string; timestamp: Date; }[]> {
+    if (!this.contract || !this.provider) {
+      throw new Error(ErrorType.METAMASK);
+    }
+
+    try {
+      // Get donation events for this campaign
+      const filter = {
+        address: this.contract.target as string,
+        topics: [
+          ethers.id("DonationReceived(uint256,address,uint256)"),
+          ethers.toBeHex(campaignId, 32)
+        ]
+      };
+      
+      const events = await this.provider.getLogs({
+        ...filter,
+        fromBlock: 0,
+        toBlock: 'latest'
+      });
+      
+      // Map events to donation objects
+      const donations = await Promise.all(events.map(async (event) => {
+        const block = await event.getBlock();
+        // Donor is the second topic (index 2)
+        const donor = ethers.getAddress('0x' + event.topics[2].slice(26));
+        // Amount is in the data field
+        const amount = ethers.AbiCoder.defaultAbiCoder().decode(['uint256'], event.data)[0];
+        
+        return {
+          donor,
+          amount: ethers.formatEther(amount),
+          timestamp: new Date(block.timestamp * 1000)
+        };
+      }));
+
+      // Sort by timestamp, most recent first
+      return donations.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+    } catch (error) {
+      console.error('Failed to get campaign donations:', error);
+      throw new Error(ErrorType.NETWORK);
+    }
+  }
+
+  async completeCampaign(campaignId: number): Promise<void> {
+    if (!this.contract) {
+      throw new Error(ErrorType.METAMASK);
+    }
+
+    try {
+      const tx = await this.contract.completeCampaign(campaignId);
+      await tx.wait();
+    } catch (error) {
+      console.error('Failed to complete campaign:', error);
       if (error instanceof Error && error.message.includes('user rejected')) {
         throw new Error(ErrorType.USER_REJECTED);
       }
