@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "/Users/danielraptom/Git/crypto-fundraiser/smart-contract/contracts/CryptoFundraiser.sol": {
-      "lastModificationDate": 1735322166801,
-      "contentHash": "dc70b02d60f2defb9866a950f3134586",
+      "lastModificationDate": 1735827599982,
+      "contentHash": "2516f577486e8e4ad103d63edab5c5b6",
       "sourceName": "contracts/CryptoFundraiser.sol",
       "solcConfig": {
         "version": "0.8.19",

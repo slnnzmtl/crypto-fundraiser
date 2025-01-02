@@ -1,9 +1,66 @@
 const hre = require("hardhat");
 const fs = require('fs');
 const path = require('path');
+const { exec } = require('child_process');
+
+// Function to kill existing frontend server
+function killFrontendServer() {
+  return new Promise((resolve, reject) => {
+    // On macOS/Linux
+    exec('lsof -ti:3000 | xargs kill -9', (error) => {
+      // Ignore error as it might mean no process was running
+      resolve();
+    });
+  });
+}
+
+async function exportState(oldContract) {
+  try {
+    // Export state if old contract exists
+    if (oldContract) {
+      console.log('Exporting state from old contract...');
+      await exec('node scripts/exportState.js');
+      console.log('State exported successfully');
+    }
+  } catch (error) {
+    console.error('Failed to export state:', error);
+  }
+}
+
+async function importState(newContract) {
+  try {
+    // Check if we have a backup to import
+    const backupPath = path.join(__dirname, '../data/backup.json');
+    if (fs.existsSync(backupPath)) {
+      console.log('Importing state to new contract...');
+      await exec('node scripts/importState.js');
+      console.log('State imported successfully');
+    }
+  } catch (error) {
+    console.error('Failed to import state:', error);
+  }
+}
 
 async function main() {
   try {
+    // Get the old contract address if it exists
+    const envPath = path.join(__dirname, '../../frontend/.env');
+    let oldContractAddress;
+    if (fs.existsSync(envPath)) {
+      const envContent = fs.readFileSync(envPath, 'utf8');
+      const match = envContent.match(/REACT_APP_CONTRACT_ADDRESS=(.*)/);
+      if (match) {
+        oldContractAddress = match[1];
+      }
+    }
+
+    // Export state from old contract if it exists
+    if (oldContractAddress) {
+      const CryptoFundraiser = await hre.ethers.getContractFactory("CryptoFundraiser");
+      const oldContract = await CryptoFundraiser.attach(oldContractAddress);
+      await exportState(oldContract);
+    }
+
     // Get the contract factory
     console.log("Getting contract factory...");
     const CryptoFundraiser = await hre.ethers.getContractFactory("CryptoFundraiser");
@@ -12,11 +69,10 @@ async function main() {
     // Deploy the contract
     console.log("Deploying CryptoFundraiser...");
     const cryptoFundraiser = await CryptoFundraiser.deploy();
-    
+
     // Wait for deployment to complete
     console.log("Waiting for deployment to complete...");
     await cryptoFundraiser.waitForDeployment();
-    
     const address = await cryptoFundraiser.getAddress();
     console.log("CryptoFundraiser deployed to:", address);
 
@@ -25,77 +81,44 @@ async function main() {
     const deploymentReceipt = await cryptoFundraiser.deploymentTransaction().wait(10);
     console.log("Deployment confirmed in block:", deploymentReceipt.blockNumber);
 
-    // Get the deployed bytecode
-    const provider = await hre.ethers.provider;
-    const deployedBytecode = await provider.getCode(address);
-    console.log("Deployed bytecode length:", deployedBytecode.length);
-    console.log("Deployed bytecode hash:", hre.ethers.keccak256(deployedBytecode));
-
-    // Verify the deployment by calling multiple view functions
-    console.log("\nVerifying deployment by calling contract functions...");
-    
-    console.log("Testing campaignCount...");
-    const campaignCount = await cryptoFundraiser.campaignCount();
-    console.log("Current campaign count:", campaignCount);
-
-    // Try to get the first campaign (should be empty/revert)
-    console.log("\nTesting campaigns mapping...");
-    try {
-        await cryptoFundraiser.campaigns(0);
-        console.log("Campaign mapping is accessible");
-    } catch (error) {
-        console.log("Campaign mapping reverted as expected (no campaigns yet)");
-        console.log("Revert reason:", error.message);
-    }
-
-    // Save the contract address to frontend .env file
-    const envPath = path.join(__dirname, '../../frontend/.env');
-    const envContent = `REACT_APP_CONTRACT_ADDRESS=${address}\n`;
-    
-    fs.writeFileSync(envPath, envContent);
-    console.log(`\nContract address saved to ${envPath}`);
-
     // Copy ABI to frontend
     const abiPath = path.join(__dirname, '../artifacts/contracts/CryptoFundraiser.sol/CryptoFundraiser.json');
     const frontendAbiPath = path.join(__dirname, '../../frontend/src/abi/CryptoFundraiser.json');
-    
+
     // Create directory if it doesn't exist
     const abiDir = path.dirname(frontendAbiPath);
     if (!fs.existsSync(abiDir)) {
-        fs.mkdirSync(abiDir, { recursive: true });
+      fs.mkdirSync(abiDir, { recursive: true });
     }
     
     // Copy ABI file
     fs.copyFileSync(abiPath, frontendAbiPath);
     console.log(`ABI copied to ${frontendAbiPath}`);
 
-    // Verify the contract on Etherscan
-    if (process.env.ETHERSCAN_API_KEY && hre.network.name !== 'localhost' && hre.network.name !== 'hardhat') {
-      console.log("\nWaiting 30 seconds before verifying on Etherscan...");
-      await new Promise(resolve => setTimeout(resolve, 30000));
-      
-      console.log("Verifying contract on Etherscan...");
-      try {
-        await hre.run("verify:verify", {
-          address: address,
-          constructorArguments: [],
-        });
-        console.log("Contract verified on Etherscan");
-      } catch (error) {
-        if (error.message.includes("Already Verified")) {
-          console.log("Contract was already verified");
-        } else {
-          console.log("Verification error:", error.message);
-          console.log("You can try verifying manually later using:");
-          console.log(`npx hardhat verify --network ${hre.network.name} ${address}`);
-        }
-      }
-    }
+    // Update .env file in frontend directory
+    const envContent = `REACT_APP_CONTRACT_ADDRESS=${address}\n`;
+    fs.writeFileSync(envPath, envContent);
+    console.log('Updated frontend .env with new contract address');
 
-    console.log("\nDeployment completed successfully!");
-    console.log("Contract address:", address);
-    console.log("Block number:", deploymentReceipt.blockNumber);
-    console.log("\nPlease restart your frontend application to use the new contract address");
+    // Import state to new contract
+    await importState(cryptoFundraiser);
+
+    // Kill existing frontend server and start a new one
+    console.log('Restarting frontend server...');
+    await killFrontendServer();
+    
+    exec('cd ../../frontend && npm start', (error, stdout, stderr) => {
+      if (error) {
+        console.error('Error restarting frontend server:', error);
+        return;
+      }
+      console.log('Frontend server restarted');
+      
+      // Log stdout and stderr
+      if (stdout) console.log(stdout);
+      if (stderr) console.error(stderr);
+    });
+
   } catch (error) {
     console.error("\nDeployment failed with error:", error);
     if (error.data) {
@@ -104,7 +127,7 @@ async function main() {
     if (error.transaction) {
       console.error("Error transaction:", error.transaction);
     }
-    throw error;
+    process.exitCode = 1;
   }
 }
 

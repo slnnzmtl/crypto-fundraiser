@@ -12,6 +12,7 @@ contract CryptoFundraiser {
         uint deadline;        // Campaign deadline (timestamp)
         uint balance;         // Current amount raised
         bool completed;       // Flag indicating if the campaign is completed
+        bool autoComplete;    // Flag indicating if campaign should auto-complete when goal is reached
     }
 
     // Mapping to store all campaigns
@@ -33,6 +34,33 @@ contract CryptoFundraiser {
     );
     event DonationReceived(uint indexed campaignId, address indexed donor, uint amount);
     event CampaignCompleted(uint indexed campaignId, bool successful);
+
+    // Function to check if a campaign can be completed
+    function canCompleteCampaign(uint _campaignId) public view returns (bool) {
+        require(_campaignId < campaignCount, "Campaign does not exist");
+        Campaign storage campaign = campaigns[_campaignId];
+        
+        if (campaign.completed) {
+            return false;
+        }
+
+        // Can complete if goal is reached (with autoComplete)
+        if (campaign.autoComplete && campaign.balance >= campaign.goal) {
+            return true;
+        }
+
+        // Can complete if deadline has passed
+        if (block.timestamp >= campaign.deadline) {
+            return true;
+        }
+
+        // Can complete if goal is reached and owner initiates
+        if (campaign.balance >= campaign.goal && msg.sender == campaign.owner) {
+            return true;
+        }
+
+        return false;
+    }
 
     // Function to get a single campaign
     function getCampaign(uint _campaignId) public view returns (Campaign memory) {
@@ -66,7 +94,8 @@ contract CryptoFundraiser {
         string memory description,
         uint goalInWei,
         uint durationInDays,
-        string memory image
+        string memory image,
+        bool autoComplete
     ) external {
         require(goalInWei > 0, "Goal must be greater than 0");
         require(durationInDays > 0, "Duration must be greater than 0");
@@ -83,7 +112,8 @@ contract CryptoFundraiser {
             goal: goalInWei,
             deadline: deadline,
             balance: 0,
-            completed: false
+            completed: false,
+            autoComplete: autoComplete
         });
 
         emit CampaignCreated(
@@ -111,15 +141,16 @@ contract CryptoFundraiser {
         donations[msg.sender][_campaignId] += msg.value;
 
         emit DonationReceived(_campaignId, msg.sender, msg.value);
+
+        // Auto-complete the campaign if goal is reached and autoComplete is enabled
+        if (campaign.autoComplete && campaign.balance >= campaign.goal) {
+            _completeCampaign(_campaignId);
+        }
     }
 
-    // Function to complete a campaign
-    function completeCampaign(uint _campaignId) external {
-        require(_campaignId < campaignCount, "Campaign does not exist");
+    // Internal function to complete a campaign
+    function _completeCampaign(uint _campaignId) internal {
         Campaign storage campaign = campaigns[_campaignId];
-
-        require(msg.sender == campaign.owner, "Only owner can complete the campaign");
-        require(block.timestamp >= campaign.deadline, "Campaign is still active");
         require(!campaign.completed, "Campaign is already completed");
 
         campaign.completed = true;
@@ -132,6 +163,18 @@ contract CryptoFundraiser {
         }
     }
 
+    // Function to complete a campaign
+    function completeCampaign(uint _campaignId) external {
+        require(_campaignId < campaignCount, "Campaign does not exist");
+        Campaign storage campaign = campaigns[_campaignId];
+
+        require(msg.sender == campaign.owner, "Only owner can complete the campaign");
+        require(canCompleteCampaign(_campaignId), "Campaign cannot be completed yet");
+        require(!campaign.completed, "Campaign is already completed");
+
+        _completeCampaign(_campaignId);
+    }
+
     // Function to refund donations
     function refund(uint _campaignId) external {
         require(_campaignId < campaignCount, "Campaign does not exist");
@@ -139,6 +182,7 @@ contract CryptoFundraiser {
 
         require(block.timestamp >= campaign.deadline, "Campaign is still active");
         require(campaign.balance < campaign.goal, "Campaign reached its goal");
+        require(!campaign.completed, "Campaign is already completed");
 
         uint donation = donations[msg.sender][_campaignId];
         require(donation > 0, "You have no donations to refund");
