@@ -3,7 +3,7 @@ import { Label } from './Label';
 
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
-  error?: string;
+  error?: string | null;
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
@@ -25,6 +25,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
       transition-colors
       disabled:opacity-50
       disabled:cursor-not-allowed
+      ${error ? 'border-red-500' : ''}
     `;
 
     return (

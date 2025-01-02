@@ -51,7 +51,7 @@ const Modal: React.FC<Props> = ({ isOpen, onClose, title, children }) => {
             : 'translate-y-[100%] sm:translate-y-[60%] opacity-0'
         }`}
       >
-        <div className="bg-dark-800/80 rounded-t-3xl sm:rounded-3xl overflow-hidden h-full">
+        <div className="bg-dark-800/80 rounded-t-xl sm:rounded-xl overflow-hidden h-full">
           <div className="relative p-8 h-full">
             <div className="relative flex items-center mb-8">
               <button

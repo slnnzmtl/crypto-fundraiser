@@ -68,7 +68,7 @@ const CreateCampaignForm: React.FC<Props> = ({ onSuccess }) => {
           onChange={handleChange}
           placeholder="Goal amount"
           min="0"
-          step="0.01"
+          step="0.0001"
           required
         />
         <div className="bg-dark-700 rounded-lg px-4 flex items-center text-gray-400">
