@@ -2,18 +2,23 @@ import React from 'react';
 import { Button, Card } from './ui/primitives';
 
 interface Props {
-  onCreateClick: () => void;
+  title: string;
+  description: string;
+  action: {
+    label: string;
+    onClick: () => void;
+  };
 }
 
-const EmptyState: React.FC<Props> = ({ onCreateClick }) => {
+const EmptyState: React.FC<Props> = ({ title, description, action }) => {
   return (
     <Card className="flex flex-col items-center justify-center min-h-[400px] p-8">
-      <h2 className="text-xl font-semibold mb-2">No active campaigns</h2>
+      <h2 className="text-xl font-semibold mb-2">{title}</h2>
       <p className="text-gray-400 text-center mb-6">
-        Create your first fundraising campaign
+        {description}
       </p>
-      <Button onClick={onCreateClick}>
-        Create campaign
+      <Button onClick={action.onClick}>
+        {action.label}
       </Button>
     </Card>
   );
