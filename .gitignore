@@ -1,0 +1,61 @@
+# Dependencies
+node_modules/
+**/node_modules/
+/.pnp
+.pnp.js
+
+# Testing
+/coverage
+**/coverage/
+
+# Production
+/build
+**/build/
+/dist
+**/dist/
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env*.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Hardhat
+cache/
+artifacts/
+
+# Truffle
+.secret
+
+# OpenZeppelin
+.openzeppelin/
+
+# Coverage directory used by tools like istanbul
+coverage
+coverage.json
+typechain
+typechain-types
+
+# Hardhat files
+cache
+artifacts 
