@@ -10,6 +10,7 @@ export interface Campaign {
   startAt: Date;
   endAt: Date;
   claimed: boolean;
+  autoComplete: boolean;
 }
 
 export interface CampaignInput {
@@ -18,6 +19,7 @@ export interface CampaignInput {
   image: string;
   goal: string;
   durationInDays: number;
+  autoComplete: boolean;
 }
 
 export interface CampaignFormData extends CampaignInput {
