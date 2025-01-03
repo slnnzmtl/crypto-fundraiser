@@ -13,27 +13,12 @@ import {
   ViewToggle,
   CampaignFilter
 } from '@components/index';
+import { useCampaignList } from '@/hooks/useCampaignList';
 
 const CampaignList: React.FC = () => {
   const modal = useModal();
   const { showError } = useError();
-
-  const handleCreateClick = async () => {
-    // Try to connect wallet first if not connected
-    if (!campaignStore.address) {
-      try {
-        await campaignStore.connect();
-      } catch (error) {
-        if (error instanceof Error) {
-          showError(error.message as ErrorType);
-        }
-        return;
-      }
-    }
-    
-    // Open create campaign modal
-    modal.openModal('createCampaign');
-  };
+  const { handleCreateClick } = useCampaignList();
 
   const containerVariants = {
     grid: {

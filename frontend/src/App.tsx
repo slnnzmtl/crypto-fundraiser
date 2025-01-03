@@ -5,11 +5,14 @@ import CampaignList from './pages/CampaignList';
 import CampaignDetails from './pages/CampaignDetails';
 import { ErrorProvider } from './hooks/useError';
 import { ModalProvider } from './hooks/useModal';
+import { useWalletEvents } from './hooks/useWalletEvents';
 import NavigationMenu from './components/ui/NavigationMenu';
 import Modals from './components/modals';
+import './styles/globals.css';
 
 function App() {
   const location = useLocation();
+  useWalletEvents();
 
   return (
     <ErrorProvider>
@@ -20,7 +23,7 @@ function App() {
             <AnimatePresence mode="wait">
               <Routes location={location} key={location.pathname}>
                 <Route path="/" element={<CampaignList />} />
-                <Route path="/campaign/:id" element={<CampaignDetails />} />
+                <Route path="/campaigns/:id" element={<CampaignDetails />} />
               </Routes>
             </AnimatePresence>
           </main>
