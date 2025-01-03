@@ -1,17 +1,17 @@
-import { Campaign } from '../types/campaign';
-import { IDonation } from '../stores/interfaces';
+import { ICampaign } from '@interfaces';
+import { IDonation } from '@interfaces';
 
 export interface ICampaignHeader {
-  campaign: Campaign;
+  campaign: ICampaign;
 }
 
 export interface ICampaignProgress {
-  campaign: Campaign;
+  campaign: ICampaign;
   progress: number;
 }
 
 export interface ICampaignActions {
-  campaign: Campaign;
+  campaign: ICampaign;
   isOwner: boolean;
   canDonate: boolean;
   canWithdraw: boolean;
@@ -22,7 +22,7 @@ export interface ICampaignActions {
 }
 
 export interface ICampaignInfo {
-  campaign: Campaign;
+  campaign: ICampaign;
   daysLeft: number;
 }
 
