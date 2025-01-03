@@ -1,37 +1,32 @@
 import React from 'react';
 import { ICampaignHeader } from '../../../pages/interfaces';
-import ImagePlaceholder from '../../ui/ImagePlaceholder';
-import StatusBadge from '../../ui/StatusBadge';
+import { ImagePlaceholder } from '@components/ui';
 
 const CampaignHeader: React.FC<ICampaignHeader> = ({ campaign }) => {
   const getStatusColor = () => {
-    if (campaign.claimed) {
+    if (campaign.status === 'completed') {
       return 'bg-green-600/20 text-green-500';
     }
-    return campaign.endAt.getTime() < Date.now()
+    return campaign.status === 'failed'
       ? 'bg-red-600/20 text-red-500'
       : 'bg-blue-600/20 text-blue-500';
   };
 
   const getStatusText = () => {
-    if (campaign.claimed) {
-      return 'Completed';
+    switch (campaign.status) {
+      case 'completed':
+        return 'Completed';
+      case 'failed':
+        return 'Failed';
+      default:
+        return 'Active';
     }
-    return campaign.endAt.getTime() < Date.now() ? 'Ended' : 'Active';
   };
 
   return (
     <div className="space-y-6">
       <div className="aspect-video w-full">
-        {campaign.image && campaign.image.trim() ? (
-          <img 
-            src={campaign.image} 
-            alt={campaign.title} 
-            className="w-full h-full object-cover rounded-lg"
-          />
-        ) : (
-          <ImagePlaceholder className="rounded-lg" />
-        )}
+        <ImagePlaceholder className="rounded-lg" />
       </div>
 
       <div className="flex justify-between items-start">
@@ -47,4 +42,4 @@ const CampaignHeader: React.FC<ICampaignHeader> = ({ campaign }) => {
   );
 };
 
-export default React.memo(CampaignHeader); 
+export default CampaignHeader; 
