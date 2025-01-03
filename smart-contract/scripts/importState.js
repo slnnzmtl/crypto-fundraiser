@@ -52,8 +52,8 @@ async function main() {
         );
         await tx.wait();
 
-        // If campaign was completed, complete it in the new contract
-        if (campaign.completed) {
+        // If campaign was completed or has a status, update it
+        if (campaign.completed || campaign.status) {
           const completeTx = await contract.completeCampaign(i);
           await completeTx.wait();
         }
