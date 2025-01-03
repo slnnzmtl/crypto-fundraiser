@@ -14,11 +14,9 @@ export interface ICampaignActions {
   campaign: ICampaign;
   isOwner: boolean;
   canDonate: boolean;
-  canWithdraw: boolean;
   isSubmitting: boolean;
-  onDonate: (amount: string) => Promise<void>;
+  onDonate: (amount: string, message?: string) => Promise<void>;
   onComplete: () => Promise<void>;
-  onWithdraw: () => Promise<void>;
 }
 
 export interface ICampaignInfo {
@@ -28,4 +26,6 @@ export interface ICampaignInfo {
 
 export interface ICampaignDonations {
   donations: IDonation[];
-} 
+}
+
+export type ViewType = 'grid' | 'list'; 
