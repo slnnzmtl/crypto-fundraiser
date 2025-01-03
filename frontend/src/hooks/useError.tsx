@@ -170,11 +170,6 @@ export const useError = () => {
 
   const showError = useCallback((type: ErrorType, customConfig?: Partial<Omit<ErrorConfig, 'type'>>) => {
     const defaultConfig = DEFAULT_ERRORS[type];
-    console.log({
-      type,
-      defaultConfig,
-      customConfig
-    })
     context.setError({
       type,
       ...defaultConfig,
