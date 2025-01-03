@@ -16,7 +16,7 @@ const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
           <textarea
             id={textareaId}
             className={cn(
-              'peer block w-full rounded-md border bg-dark-900 px-3',
+              'peer block w-full rounded-md border bg-dark-800 px-3',
               'min-h-[120px] pt-[25px] pb-[9px]',
               'text-base leading-6 placeholder:text-transparent',
               'transition-colors duration-200',
