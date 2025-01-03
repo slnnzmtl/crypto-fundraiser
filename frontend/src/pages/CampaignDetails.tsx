@@ -1,8 +1,6 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
 import { useParams } from 'react-router-dom';
-import { campaignStore } from '@stores/CampaignStore';
-import { walletStore } from '@stores/WalletStore';
 import { useError } from '@hooks/useError';
 import { ErrorType } from '@error';
 import {
@@ -15,90 +13,24 @@ import {
   CampaignInfo
 } from '@components/index';
 import { useCampaignData } from '@hooks/useCampaignData';
+import { useCampaignPermissions } from '@hooks/useCampaignPermissions';
+import { useCampaignActions } from '@hooks/useCampaignActions';
 
 const CampaignDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { showError } = useError();
-  const { campaign, donations, isLoading } = useCampaignData(id);
-  const [canWithdraw, setCanWithdraw] = React.useState(false);
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const { campaign, donations, isLoading, hasAttemptedLoad } = useCampaignData(id);
+  const { isOwner, canDonate, canWithdraw } = useCampaignPermissions(campaign);
+  const { isSubmitting, handleDonate, handleComplete, handleWithdraw } = useCampaignActions(campaign, showError);
+  const [hasShownError, setHasShownError] = React.useState(false);
 
   // Handle campaign not found error
   React.useEffect(() => {
-    if (!isLoading && !campaign) {
+    if (hasAttemptedLoad && !isLoading && !campaign && !hasShownError) {
       showError(ErrorType.NOT_FOUND);
+      setHasShownError(true);
     }
-  }, [isLoading, campaign, showError]);
-
-  const isOwner = React.useMemo(() => Boolean(
-    walletStore.address && 
-    campaign?.owner && 
-    typeof campaign.owner === 'string' && 
-    typeof walletStore.address === 'string' && 
-    campaign.owner.toLowerCase() === walletStore.address.toLowerCase()
-  ), [campaign?.owner, walletStore.address]);
-
-  const canDonate = React.useMemo(() => Boolean(
-    walletStore.address && 
-    campaign?.owner && 
-    typeof campaign.owner === 'string' && 
-    typeof walletStore.address === 'string' && 
-    campaign.owner.toLowerCase() !== walletStore.address.toLowerCase()
-  ), [campaign?.owner, walletStore.address]);
-
-  React.useEffect(() => {
-    if (campaign && isOwner) {
-      campaignStore.canWithdrawFunds(campaign.id).then(setCanWithdraw);
-    }
-  }, [campaign, isOwner]);
-
-  const handleDonate = React.useCallback(async (amount: string) => {
-    if (!campaign) return;
-    setIsSubmitting(true);
-    try {
-      await campaignStore.donate(campaign.id, parseFloat(amount));
-    } catch (error) {
-      if (error instanceof Error) {
-        showError(error.message as ErrorType);
-      } else {
-        showError(ErrorType.NETWORK);
-      }
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [campaign, showError]);
-
-  const handleComplete = React.useCallback(async () => {
-    if (!campaign) return;
-    setIsSubmitting(true);
-    try {
-      await campaignStore.completeCampaign(campaign.id);
-    } catch (error) {
-      if (error instanceof Error) {
-        showError(error.message as ErrorType);
-      } else {
-        showError(ErrorType.NETWORK);
-      }
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [campaign, showError]);
-
-  const handleWithdraw = React.useCallback(async () => {
-    if (!campaign) return;
-    setIsSubmitting(true);
-    try {
-      await campaignStore.withdrawFunds(campaign.id);
-    } catch (error) {
-      if (error instanceof Error) {
-        showError(error.message as ErrorType);
-      } else {
-        showError(ErrorType.NETWORK);
-      }
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [campaign, showError]);
+  }, [hasAttemptedLoad, isLoading, campaign, showError, hasShownError]);
 
   if (isLoading) {
     return (
@@ -114,7 +46,7 @@ const CampaignDetails: React.FC = () => {
 
   const timeLeft = Math.max(0, campaign.endAt.getTime() - Date.now());
   const daysLeft = Math.ceil(timeLeft / (1000 * 60 * 60 * 24));
-  const progress = Math.min((Number(campaign.pledged) / Number(campaign.goal)) * 100, 100);
+  const progress = Math.min((campaign.pledged / campaign.goal) * 100, 100);
 
   return (
     <PageTransition>
