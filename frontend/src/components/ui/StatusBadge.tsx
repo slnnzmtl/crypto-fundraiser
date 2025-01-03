@@ -1,5 +1,5 @@
 import React from 'react';
-import { Campaign } from '../../types/campaign';
+import { Campaign } from '@/types/campaign';
 
 interface Props {
   campaign: Campaign;
@@ -8,24 +8,23 @@ interface Props {
 
 const StatusBadge: React.FC<Props> = ({ campaign, className = '' }) => {
   const getStatusConfig = () => {
-    if (campaign.claimed) {
-      return {
-        className: 'bg-green-600/20 text-green-500',
-        label: 'Completed'
-      };
+    switch (campaign.status) {
+      case 'completed':
+        return {
+          className: 'bg-green-600/20 text-green-500',
+          label: 'Completed'
+        };
+      case 'failed':
+        return {
+          className: 'bg-red-600/20 text-red-500',
+          label: 'Failed'
+        };
+      default:
+        return {
+          className: 'bg-blue-600/20 text-blue-500',
+          label: 'Active'
+        };
     }
-    
-    if (campaign.endAt.getTime() < Date.now()) {
-      return {
-        className: 'bg-red-600/20 text-red-500',
-        label: 'Ended'
-      };
-    }
-    
-    return {
-      className: 'bg-blue-600/20 text-blue-500',
-      label: 'Active'
-    };
   };
 
   const { className: statusClassName, label } = getStatusConfig();

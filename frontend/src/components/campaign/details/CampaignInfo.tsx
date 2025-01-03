@@ -21,12 +21,13 @@ const CampaignInfo: React.FC<ICampaignInfo> = ({ campaign, daysLeft }) => {
     }
   };
 
-  const getDaysLeft = () => {
+  const getDaysLeft = React.useMemo(() => {
     if (campaign.status === 'completed') {
-      return 'Completed';
+      return null;
     }
+
     return daysLeft > 0 ? pluralize(daysLeft, 'day') : 'Ended';
-  };
+  }, [campaign.status, daysLeft]);
 
   return (
     <div className="space-y-2">
@@ -44,10 +45,12 @@ const CampaignInfo: React.FC<ICampaignInfo> = ({ campaign, daysLeft }) => {
         <span className="text-gray-400">Status</span>
         <span className={`text-white ${getStatusColor()}`}>{getStatusText()}</span>
       </div>
-      <div className="flex justify-between">
-        <span className="text-gray-400">Time Left</span>
-        <span className="text-white">{getDaysLeft()}</span>
-      </div>
+      {getDaysLeft && (
+        <div className="flex justify-between">
+          <span className="text-gray-400">Time Left</span>
+          <span className="text-white">{getDaysLeft}</span>
+        </div>
+      )}
     </div>
   );
 };

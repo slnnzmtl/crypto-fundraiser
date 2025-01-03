@@ -1,9 +1,9 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
-import { campaignStore } from '../../stores/CampaignStore';
+import { campaignStore, walletStore } from '@stores/index';
 
 export const CampaignFilter: React.FC = observer(() => {
-  if (!campaignStore.address) {
+  if (!walletStore.address) {
     return null;
   }
 
