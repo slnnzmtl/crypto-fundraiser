@@ -44,7 +44,8 @@ async function main() {
         deadline: campaign.deadline.toString(),
         balance: campaign.balance.toString(),
         completed: campaign.completed,
-        autoComplete: campaign.autoComplete
+        autoComplete: campaign.autoComplete,
+        status: (await contract.getCampaignStatus(i)).toString()
       });
 
       donations[i] = campaignDonations;

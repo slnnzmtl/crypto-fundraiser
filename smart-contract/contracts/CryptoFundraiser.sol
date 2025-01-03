@@ -2,22 +2,24 @@
 pragma solidity ^0.8.0;
 
 contract CryptoFundraiser {
+    enum Status { Active, Completed, Failed }
 
     struct Campaign {
-        address payable owner; // Address of the campaign owner
-        string title;         // Campaign title
-        string description;   // Campaign description
-        string image;         // Campaign image URL
-        uint goal;            // Target amount in wei
-        uint deadline;        // Campaign deadline (timestamp)
-        uint balance;         // Current amount raised
-        bool completed;       // Flag indicating if the campaign is completed
-        bool autoComplete;    // Flag indicating if campaign should auto-complete when goal is reached
+        address payable owner;
+        string title;
+        string description;
+        string image;
+        uint goal;
+        uint deadline;
+        uint balance;
+        bool completed;
+        bool autoComplete;
+        Status status;
     }
 
     // Mapping to store all campaigns
     mapping(uint => Campaign) public campaigns;
-    uint public campaignCount = 0; // Counter for campaigns
+    uint public campaignCount = 0;
 
     // Mapping to store donations
     mapping(address => mapping(uint => uint)) public donations;
@@ -32,9 +34,146 @@ contract CryptoFundraiser {
         uint goal,
         uint deadline
     );
-    event DonationReceived(uint indexed campaignId, address indexed donor, uint amount);
+    event DonationReceived(
+        uint indexed campaignId,
+        address indexed donor,
+        uint amount,
+        string message
+    );
     event CampaignCompleted(uint indexed campaignId, bool successful);
     event FundsWithdrawn(uint indexed campaignId, address indexed owner, uint amount);
+
+    // Function to create a campaign
+    function createCampaign(
+        string memory title,
+        string memory description,
+        uint goalInWei,
+        uint durationInDays,
+        string memory image,
+        bool autoComplete
+    ) external {
+        require(goalInWei > 0, "Goal must be greater than 0");
+        require(durationInDays > 0, "Duration must be greater than 0");
+        require(bytes(title).length > 0, "Title cannot be empty");
+        require(bytes(description).length > 0, "Description cannot be empty");
+
+        uint deadline = block.timestamp + (durationInDays * 1 days);
+
+        campaigns[campaignCount] = Campaign({
+            owner: payable(msg.sender),
+            title: title,
+            description: description,
+            image: image,
+            goal: goalInWei,
+            deadline: deadline,
+            balance: 0,
+            completed: false,
+            autoComplete: autoComplete,
+            status: Status.Active
+        });
+
+        emit CampaignCreated(
+            campaignCount,
+            msg.sender,
+            title,
+            description,
+            image,
+            goalInWei,
+            deadline
+        );
+        campaignCount++;
+    }
+
+    // Function to get campaign status
+    function getCampaignStatus(uint _campaignId) public view returns (Status) {
+        require(_campaignId < campaignCount, "Campaign does not exist");
+        Campaign storage campaign = campaigns[_campaignId];
+        
+        if (campaign.completed) {
+            return campaign.status;
+        }
+        
+        if (block.timestamp >= campaign.deadline) {
+            return campaign.balance >= campaign.goal ? Status.Completed : Status.Failed;
+        }
+        
+        return Status.Active;
+    }
+
+    // Function to get all campaigns with status
+    function getCampaigns() public view returns (Campaign[] memory) {
+        Campaign[] memory allCampaigns = new Campaign[](campaignCount);
+        
+        for(uint i = 0; i < campaignCount; i++) {
+            Campaign storage campaign = campaigns[i];
+            Status currentStatus = getCampaignStatus(i);
+            
+            allCampaigns[i] = Campaign({
+                owner: campaign.owner,
+                title: campaign.title,
+                description: campaign.description,
+                image: campaign.image,
+                goal: campaign.goal,
+                deadline: campaign.deadline,
+                balance: campaign.balance,
+                completed: campaign.completed,
+                autoComplete: campaign.autoComplete,
+                status: currentStatus
+            });
+        }
+        
+        return allCampaigns;
+    }
+
+    // Function to get a single campaign with status
+    function getCampaign(uint _campaignId) public view returns (Campaign memory) {
+        require(_campaignId < campaignCount, "Campaign does not exist");
+        Campaign storage campaign = campaigns[_campaignId];
+        Status currentStatus = getCampaignStatus(_campaignId);
+        
+        return Campaign({
+            owner: campaign.owner,
+            title: campaign.title,
+            description: campaign.description,
+            image: campaign.image,
+            goal: campaign.goal,
+            deadline: campaign.deadline,
+            balance: campaign.balance,
+            completed: campaign.completed,
+            autoComplete: campaign.autoComplete,
+            status: currentStatus
+        });
+    }
+
+    // Function to get user's donations
+    function getDonations(address _donor) public view returns (uint[] memory) {
+        uint[] memory donationArray = new uint[](campaignCount);
+        for(uint i = 0; i < campaignCount; i++) {
+            donationArray[i] = donations[_donor][i];
+        }
+        return donationArray;
+    }
+
+    // Function to donate to a campaign
+    function donate(uint _campaignId, string memory _message) external payable {
+        require(_campaignId < campaignCount, "Campaign does not exist");
+        Campaign storage campaign = campaigns[_campaignId];
+
+        require(block.timestamp < campaign.deadline, "Campaign has ended");
+        require(!campaign.completed, "Campaign is already completed");
+        require(msg.value > 0, "Donation must be greater than 0");
+        require(getCampaignStatus(_campaignId) == Status.Active, "Campaign is not active");
+
+        campaign.balance += msg.value;
+        donations[msg.sender][_campaignId] += msg.value;
+
+        emit DonationReceived(_campaignId, msg.sender, msg.value, _message);
+
+        // Auto-complete the campaign if goal is reached and autoComplete is enabled
+        if (campaign.autoComplete && campaign.balance >= campaign.goal) {
+            _completeCampaign(_campaignId);
+        }
+    }
 
     // Function to check if a campaign can be completed
     function canCompleteCampaign(uint _campaignId) public view returns (bool) {
@@ -61,6 +200,35 @@ contract CryptoFundraiser {
         }
 
         return false;
+    }
+
+    // Function to complete a campaign
+    function completeCampaign(uint _campaignId) external {
+        require(_campaignId < campaignCount, "Campaign does not exist");
+        Campaign storage campaign = campaigns[_campaignId];
+
+        require(msg.sender == campaign.owner, "Only owner can complete the campaign");
+        require(canCompleteCampaign(_campaignId), "Campaign cannot be completed yet");
+        require(!campaign.completed, "Campaign is already completed");
+
+        _completeCampaign(_campaignId);
+    }
+
+    // Internal function to complete a campaign
+    function _completeCampaign(uint _campaignId) internal {
+        Campaign storage campaign = campaigns[_campaignId];
+        require(!campaign.completed, "Campaign is already completed");
+
+        campaign.completed = true;
+
+        if (campaign.balance >= campaign.goal) {
+            campaign.status = Status.Completed;
+            campaign.owner.transfer(campaign.balance);
+            emit CampaignCompleted(_campaignId, true);
+        } else {
+            campaign.status = Status.Failed;
+            emit CampaignCompleted(_campaignId, false);
+        }
     }
 
     // Function to check if funds can be withdrawn
@@ -104,124 +272,11 @@ contract CryptoFundraiser {
         uint amount = campaign.balance;
         campaign.balance = 0;
         
-        // Transfer funds to owner
-        (bool sent,) = payable(campaign.owner).call{value: amount}("");
-        require(sent, "Failed to send funds");
+        // Transfer funds to owner using transfer instead of call
+        // This limits gas to 2300 and reverts on failure
+        payable(campaign.owner).transfer(amount);
 
         emit FundsWithdrawn(_campaignId, campaign.owner, amount);
-    }
-
-    // Function to get a single campaign
-    function getCampaign(uint _campaignId) public view returns (Campaign memory) {
-        require(_campaignId < campaignCount, "Campaign does not exist");
-        return campaigns[_campaignId];
-    }
-
-    // Function to get all campaigns
-    function getCampaigns() public view returns (Campaign[] memory) {
-        Campaign[] memory allCampaigns = new Campaign[](campaignCount);
-        
-        for(uint i = 0; i < campaignCount; i++) {
-            allCampaigns[i] = campaigns[i];
-        }
-        
-        return allCampaigns;
-    }
-
-    // Function to get user's donations
-    function getDonations(address _donor) public view returns (uint[] memory) {
-        uint[] memory donationArray = new uint[](campaignCount);
-        for(uint i = 0; i < campaignCount; i++) {
-            donationArray[i] = donations[_donor][i];
-        }
-        return donationArray;
-    }
-
-    // Function to create a campaign
-    function createCampaign(
-        string memory title,
-        string memory description,
-        uint goalInWei,
-        uint durationInDays,
-        string memory image,
-        bool autoComplete
-    ) external {
-        require(goalInWei > 0, "Goal must be greater than 0");
-        require(durationInDays > 0, "Duration must be greater than 0");
-        require(bytes(title).length > 0, "Title cannot be empty");
-        require(bytes(description).length > 0, "Description cannot be empty");
-
-        uint deadline = block.timestamp + (durationInDays * 1 days);
-
-        campaigns[campaignCount] = Campaign({
-            owner: payable(msg.sender),
-            title: title,
-            description: description,
-            image: image,
-            goal: goalInWei,
-            deadline: deadline,
-            balance: 0,
-            completed: false,
-            autoComplete: autoComplete
-        });
-
-        emit CampaignCreated(
-            campaignCount,
-            msg.sender,
-            title,
-            description,
-            image,
-            goalInWei,
-            deadline
-        );
-        campaignCount++;
-    }
-
-    // Function to donate to a campaign
-    function donate(uint _campaignId) external payable {
-        require(_campaignId < campaignCount, "Campaign does not exist");
-        Campaign storage campaign = campaigns[_campaignId];
-
-        require(block.timestamp < campaign.deadline, "Campaign has ended");
-        require(!campaign.completed, "Campaign is already completed");
-        require(msg.value > 0, "Donation must be greater than 0");
-
-        campaign.balance += msg.value;
-        donations[msg.sender][_campaignId] += msg.value;
-
-        emit DonationReceived(_campaignId, msg.sender, msg.value);
-
-        // Auto-complete the campaign if goal is reached and autoComplete is enabled
-        if (campaign.autoComplete && campaign.balance >= campaign.goal) {
-            _completeCampaign(_campaignId);
-        }
-    }
-
-    // Internal function to complete a campaign
-    function _completeCampaign(uint _campaignId) internal {
-        Campaign storage campaign = campaigns[_campaignId];
-        require(!campaign.completed, "Campaign is already completed");
-
-        campaign.completed = true;
-
-        if (campaign.balance >= campaign.goal) {
-            campaign.owner.transfer(campaign.balance);
-            emit CampaignCompleted(_campaignId, true);
-        } else {
-            emit CampaignCompleted(_campaignId, false);
-        }
-    }
-
-    // Function to complete a campaign
-    function completeCampaign(uint _campaignId) external {
-        require(_campaignId < campaignCount, "Campaign does not exist");
-        Campaign storage campaign = campaigns[_campaignId];
-
-        require(msg.sender == campaign.owner, "Only owner can complete the campaign");
-        require(canCompleteCampaign(_campaignId), "Campaign cannot be completed yet");
-        require(!campaign.completed, "Campaign is already completed");
-
-        _completeCampaign(_campaignId);
     }
 
     // Function to refund donations
@@ -232,6 +287,7 @@ contract CryptoFundraiser {
         require(block.timestamp >= campaign.deadline, "Campaign is still active");
         require(campaign.balance < campaign.goal, "Campaign reached its goal");
         require(!campaign.completed, "Campaign is already completed");
+        require(getCampaignStatus(_campaignId) != Status.Completed, "Cannot refund completed campaign");
 
         uint donation = donations[msg.sender][_campaignId];
         require(donation > 0, "You have no donations to refund");

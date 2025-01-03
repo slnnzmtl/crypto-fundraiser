@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* Hide number input arrows */
+  input[type="number"].no-arrows::-webkit-outer-spin-button,
+  input[type="number"].no-arrows::-webkit-inner-spin-button {
+    -webkit-appearance: none !important;
+    margin: 0 !important;
+  }
+
+  input[type="number"].no-arrows {
+    -moz-appearance: textfield !important;
+  }
+} 
