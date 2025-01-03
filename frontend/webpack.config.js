@@ -24,9 +24,17 @@ module.exports = {
     ]
   },
   resolve: {
-    extensions: ['.tsx', '.ts', '.js'],
+    extensions: ['.ts', '.tsx', '.js', '.jsx'],
     alias: {
-      '@': path.resolve(__dirname, 'src')
+      '@': path.resolve(__dirname, 'src'),
+      '@components': path.resolve(__dirname, 'src/components'),
+      '@stores': path.resolve(__dirname, 'src/stores'),
+      '@hooks': path.resolve(__dirname, 'src/hooks'),
+      '@utils': path.resolve(__dirname, 'src/utils'),
+      '@types': path.resolve(__dirname, 'src/types'),
+      '@services': path.resolve(__dirname, 'src/services'),
+      '@interfaces': path.resolve(__dirname, 'src/types/interfaces'),
+      '@error': path.resolve(__dirname, 'src/types/error')
     }
   },
   plugins: [

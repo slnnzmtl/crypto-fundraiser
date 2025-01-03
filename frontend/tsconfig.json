@@ -21,7 +21,15 @@
     "jsx": "react-jsx",
     "baseUrl": "src",
     "paths": {
-      "@/*": ["*"]
+      "@/*": ["*"],
+      "@components/*": ["components/*"],
+      "@stores/*": ["stores/*"],
+      "@hooks/*": ["hooks/*"],
+      "@utils/*": ["utils/*"],
+      "@types/*": ["types/*"],
+      "@services/*": ["services/*"],
+      "@interfaces": ["types/interfaces"],
+      "@error": ["types/error"]
     }
   },
   "include": [
