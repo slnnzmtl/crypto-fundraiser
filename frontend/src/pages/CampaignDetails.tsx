@@ -1,79 +1,70 @@
 import React from 'react';
-import { observer } from 'mobx-react-lite';
 import { useParams } from 'react-router-dom';
+import { observer } from 'mobx-react-lite';
+import { motion } from 'framer-motion';
 import { useError } from '@hooks/useError';
-import { ErrorType } from '@error';
-import {
-  CampaignDetailsPlaceholder,
-  PageTransition,
-  DonationList,
-  CampaignHeader,
-  CampaignProgress,
-  CampaignActions,
-  CampaignInfo
-} from '@components/index';
 import { useCampaignData } from '@hooks/useCampaignData';
 import { useCampaignPermissions } from '@hooks/useCampaignPermissions';
 import { useCampaignActions } from '@hooks/useCampaignActions';
+import { CampaignDetailsLayout } from '@components/campaign/details/CampaignDetailsLayout';
+import { CampaignDetailsPlaceholder, ErrorPage } from '@components/feedback';
 
 const CampaignDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { showError } = useError();
-  const { campaign, donations, isLoading, hasAttemptedLoad } = useCampaignData(id);
-  const { isOwner, canDonate, canWithdraw } = useCampaignPermissions(campaign);
-  const { isSubmitting, handleDonate, handleComplete, handleWithdraw } = useCampaignActions(campaign, showError);
-  const [hasShownError, setHasShownError] = React.useState(false);
+  const { campaign, donations, isLoading: loading } = useCampaignData(id);
+  const { isOwner, canDonate } = useCampaignPermissions(campaign);
+  const { isSubmitting, handleDonate, handleComplete } = useCampaignActions(campaign, showError);
 
-  // Handle campaign not found error
-  React.useEffect(() => {
-    if (hasAttemptedLoad && !isLoading && !campaign && !hasShownError) {
-      showError(ErrorType.NOT_FOUND);
-      setHasShownError(true);
-    }
-  }, [hasAttemptedLoad, isLoading, campaign, showError, hasShownError]);
+  const timeLeft = React.useMemo(() => {
+    if (!campaign) return 0;
+    return Math.max(0, campaign.endAt.getTime() - Date.now());
+  }, [campaign]);
 
-  if (isLoading) {
-    return (
-      <PageTransition>
-        <CampaignDetailsPlaceholder />
-      </PageTransition>
-    );
+  const daysLeft = React.useMemo(() => {
+    if (!campaign) return 0;
+    return Math.ceil(timeLeft / (1000 * 60 * 60 * 24));
+  }, [timeLeft]);
+
+  const progress = React.useMemo(() => {
+    if (!campaign) return 0;
+    return Math.min((campaign.pledged / campaign.goal) * 100, 100);
+  }, [campaign]);
+
+  if (loading) {
+    return <CampaignDetailsPlaceholder />;
   }
 
   if (!campaign) {
-    return null;
+    return (
+      <ErrorPage
+        title="Campaign Not Found" 
+        description="The campaign you're looking for doesn't exist or has been removed."
+        icon="error"
+      />
+    );
   }
 
-  const timeLeft = Math.max(0, campaign.endAt.getTime() - Date.now());
-  const daysLeft = Math.ceil(timeLeft / (1000 * 60 * 60 * 24));
-  const progress = Math.min((campaign.pledged / campaign.goal) * 100, 100);
-
   return (
-    <PageTransition>
-      <div className="max-w-4xl mx-auto py-8 px-4">
-        <div className="grid gap-6 md:grid-cols-[2fr,1fr]">
-          <div className="space-y-6">
-            <CampaignHeader campaign={campaign} />
-            <CampaignProgress campaign={campaign} progress={progress} />
-            <DonationList donations={donations} />
-          </div>
-
-          <div className="space-y-6">
-            <CampaignActions
-              campaign={campaign}
-              isOwner={isOwner}
-              canDonate={canDonate}
-              canWithdraw={canWithdraw}
-              isSubmitting={isSubmitting}
-              onDonate={handleDonate}
-              onComplete={handleComplete}
-              onWithdraw={handleWithdraw}
-            />
-            <CampaignInfo campaign={campaign} daysLeft={daysLeft} />
-          </div>
-        </div>
-      </div>
-    </PageTransition>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 20 }}
+      transition={{ duration: 0.2 }}
+      className="py-8"
+    >
+      <CampaignDetailsLayout
+        campaign={campaign}
+        donations={donations}
+        progress={progress}
+        daysLeft={daysLeft}
+        isOwner={isOwner}
+        canDonate={canDonate}
+        isSubmitting={isSubmitting}
+        onDonate={handleDonate}
+        onComplete={handleComplete}
+      />
+    </motion.div>
   );
 };
 
