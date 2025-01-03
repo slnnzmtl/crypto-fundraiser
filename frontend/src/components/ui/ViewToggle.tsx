@@ -1,6 +1,7 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
-import { campaignStore, ViewType } from '../../stores/CampaignStore';
+import { campaignStore } from '../../stores/CampaignStore';
+import { ViewType } from '@stores/interfaces';
 
 interface ViewToggleProps {
   className?: string;
