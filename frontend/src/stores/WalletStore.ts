@@ -1,68 +1,20 @@
-import { makeAutoObservable, action, runInAction } from 'mobx';
-import { contractService, isWalletDisconnected } from '../services/ContractService';
-import { ErrorType } from '../types/error';
-import { IWallet } from './interfaces';
+import { makeAutoObservable, action } from 'mobx';
+import { contractService } from '@services/ContractService';
+import { ErrorType } from '@error';
 
-export class WalletStore implements IWallet {
+class WalletStore {
   address: string | null = null;
-  loading: boolean = false;
+  loading = false;
   error: string | null = null;
   private accountCheckInterval: NodeJS.Timer | null = null;
 
   constructor() {
     makeAutoObservable(this);
-    this.init();
-
-    if (window.ethereum) {
-      this.setupAccountsListener();
-    }
   }
 
-  private setupAccountsListener = () => {
-    const checkAccounts = async () => {
-      try {
-        if (isWalletDisconnected()) {
-          return;
-        }
-
-        const accounts = await window.ethereum?.request({ method: 'eth_accounts' });
-        if (!accounts || accounts.length === 0) {
-          this.disconnect();
-        } else if (accounts[0].toLowerCase() !== this.address?.toLowerCase()) {
-          runInAction(() => {
-            this.address = accounts[0];
-          });
-        }
-      } catch (error) {
-        console.error('Failed to check accounts:', error);
-      }
-    };
-
-    checkAccounts();
-    this.accountCheckInterval = setInterval(checkAccounts, 3000);
-  };
-
-  private async init() {
-    try {
-      if (isWalletDisconnected()) {
-        runInAction(() => {
-          this.loading = false;
-        });
-        return;
-      }
-
-      const address = await contractService.checkConnection();
-      runInAction(() => {
-        this.address = address;
-        this.loading = false;
-      });
-    } catch (error) {
-      console.error('Failed to initialize:', error);
-      runInAction(() => {
-        this.loading = false;
-      });
-    }
-  }
+  setAddress = action((address: string | null) => {
+    this.address = address;
+  });
 
   setLoading = action((loading: boolean) => {
     this.loading = loading;
@@ -72,9 +24,16 @@ export class WalletStore implements IWallet {
     this.error = error;
   });
 
-  setAddress = action((address: string | null) => {
-    this.address = address;
-  });
+  async checkConnection(): Promise<boolean> {
+    try {
+      const address = await contractService.checkConnection();
+      this.setAddress(address);
+      return !!address;
+    } catch (error) {
+      console.error('Failed to check connection:', error);
+      return false;
+    }
+  }
 
   async connect() {
     this.setLoading(true);
