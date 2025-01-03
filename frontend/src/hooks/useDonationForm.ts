@@ -1,58 +1,29 @@
 import { useState, useCallback } from 'react';
-import { Campaign } from '../types/campaign';
 
-export const useDonationForm = (
-  campaign: Campaign | undefined,
-  onDonate: (amount: string) => Promise<void>
-) => {
+export const useDonationForm = () => {
   const [amount, setAmount] = useState('');
-  const [amountError, setAmountError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const validateAmount = useCallback((value: string): boolean => {
+  const validateAmount = useCallback((value: string) => {
+    if (!value) {
+      return 'Amount is required';
+    }
     const numValue = parseFloat(value);
-    if (!value || isNaN(numValue)) {
-      setAmountError('Please enter a valid amount');
-      return false;
+    if (isNaN(numValue) || numValue <= 0) {
+      return 'Amount must be greater than 0';
     }
-    if (numValue <= 0) {
-      setAmountError('Amount must be greater than 0');
-      return false;
-    }
-    setAmountError(null);
-    return true;
+    return null;
   }, []);
 
-  const handleAmountChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
+  const handleAmountChange = useCallback((value: string) => {
     setAmount(value);
-    if (value) {
-      validateAmount(value);
-    } else {
-      setAmountError(null);
-    }
+    setError(validateAmount(value));
   }, [validateAmount]);
-
-  const handleDonate = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!campaign) return;
-
-    if (!validateAmount(amount)) {
-      return;
-    }
-
-    try {
-      await onDonate(amount);
-      setAmount('');
-      setAmountError(null);
-    } catch (error) {
-      // Error handling is done by the parent component
-    }
-  }, [amount, campaign, onDonate, validateAmount]);
 
   return {
     amount,
-    amountError,
-    handleAmountChange,
-    handleDonate
+    error,
+    isValid: !error && !!amount,
+    setAmount: handleAmountChange
   };
 }; 
