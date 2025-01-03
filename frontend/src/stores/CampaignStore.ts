@@ -1,269 +1,171 @@
-import { makeAutoObservable, action, runInAction } from 'mobx';
-import { contractService } from '../services/ContractService';
-import { Campaign, CampaignInput } from '../types/campaign';
-import { ErrorType } from '../types/error';
-import { progressStore } from './ProgressStore';
+import { makeAutoObservable, runInAction } from 'mobx';
+import { contractService } from '@services/ContractService';
+import { Campaign, CampaignInput } from '@/types/campaign';
+import { ViewType } from '@interfaces';
+import { ErrorType } from '@error';
+import { ethers } from 'ethers';
 import { walletStore } from './WalletStore';
-import { viewStore } from './ViewStore';
-import { ICampaign, IDonation, IWallet, IView, ViewType } from './interfaces';
 
-export class CampaignStore implements ICampaign, IWallet, IView {
-  // IWallet
-  address: string | null = null;
-
-  // IView
-  viewType: ViewType = 'grid';
-  showOnlyOwned: boolean = false;
-
-  // ICampaign
+class CampaignStore {
   campaigns: Campaign[] = [];
-  donations: Record<number, IDonation[]> = {};
-  loading: boolean = false;
-  initialLoading: boolean = true;
-  error: string | null = null;
+  donations: Record<number, { donor: string; amount: string; message: string; timestamp: Date; }[]> = {};
+  loading = false;
+  initialLoading = true;
+  viewType: ViewType = 'grid';
+  showOnlyOwned = false;
 
   constructor() {
     makeAutoObservable(this);
-    this.init();
+    this.initialize();
   }
 
-  private async init() {
+  private async initialize() {
     try {
-      if (walletStore.address) {
-        await this.loadCampaigns();
-      }
-    } finally {
+      const isConnected = await walletStore.checkConnection();
       runInAction(() => {
         this.initialLoading = false;
+        if (isConnected) {
+          this.loadCampaigns();
+        }
       });
-    }
-  }
-
-  // IWallet methods
-  @action
-  setLoading(loading: boolean) {
-    this.loading = loading;
-  }
-
-  @action
-  setError(error: string | null) {
-    this.error = error;
-  }
-
-  @action
-  async connect(): Promise<void> {
-    await walletStore.connect();
-    runInAction(() => {
-      this.address = walletStore.address;
-    });
-  }
-
-  @action
-  disconnect(): void {
-    walletStore.disconnect();
-    runInAction(() => {
-      this.address = null;
-    });
-  }
-
-  @action
-  logout(): void {
-    this.disconnect();
-    this.reset();
-  }
-
-  // IView methods
-  @action
-  setViewType(type: ViewType): void {
-    this.viewType = type;
-  }
-
-  @action
-  setShowOnlyOwned(show: boolean): void {
-    this.showOnlyOwned = show;
-  }
-
-  setCampaigns = action((campaigns: Campaign[]) => {
-    this.campaigns = campaigns;
-  });
-
-  setDonations = action((campaignId: number, donations: IDonation[]) => {
-    this.donations[campaignId] = donations;
-  });
-
-  async loadCampaigns() {
-    if (!this.loading) {
-      this.setLoading(true);
-      this.setError(null);
-    }
-
-    try {
-      progressStore.start();
-
-      if (!walletStore.address) {
-        await walletStore.connect();
-        return;
-      }
-      const campaigns = await contractService.getCampaigns();
-      runInAction(() => {
-        this.campaigns = campaigns;
-      });
-      progressStore.finish();
     } catch (error) {
-      progressStore.reset();
-      if (error instanceof Error) {
-        throw error;
-      }
-      throw new Error(ErrorType.GET_CAMPAIGNS_FAILED);
-    } finally {
-      this.setLoading(false);
+      console.error('Failed to initialize:', error);
+      this.setLoadingState(false, false);
     }
   }
 
-  async createCampaign(campaignInput: CampaignInput): Promise<number> {
-    this.setLoading(true);
-    this.setError(null);
+  private setLoadingState(loading: boolean, initialLoading: boolean) {
+    runInAction(() => {
+      this.loading = loading;
+      this.initialLoading = initialLoading;
+    });
+  }
 
+  async createCampaign(campaignInput: CampaignInput): Promise<number | void> {
+    this.loading = true;
     try {
-      progressStore.start();
       if (!walletStore.address) {
         await walletStore.connect();
       }
       const campaignId = await contractService.createCampaign(campaignInput);
+      
+      // Wait for a few blocks to ensure the campaign is indexed
+      await new Promise(resolve => setTimeout(resolve, 2000));
       await this.loadCampaigns();
-      progressStore.finish();
+      
       return campaignId;
     } catch (error) {
-      progressStore.reset();
-      if (error instanceof Error) {
-        throw error;
-      }
-      throw new Error(ErrorType.NETWORK);
+      this.handleError(error);
     } finally {
-      this.setLoading(false);
+      this.setLoadingState(false, this.initialLoading);
     }
   }
 
-  async donate(campaignId: number, amount: number) {
-    this.setLoading(true);
-    this.setError(null);
+  async loadCampaigns() {
+    if (this.loading) return;
 
+    this.loading = true;
     try {
-      progressStore.start();
-      if (!walletStore.address) {
-        await walletStore.connect();
-      }
-      await contractService.donate(campaignId, amount);
-      await Promise.all([
-        this.loadCampaigns(),
-        this.loadCampaignDonations(campaignId)
-      ]);
-      progressStore.finish();
-    } catch (error) {
-      progressStore.reset();
-      if (error instanceof Error) {
-        throw error;
-      }
-      throw new Error(ErrorType.NETWORK);
-    } finally {
-      this.setLoading(false);
-    }
-  }
-
-  async loadCampaignDonations(campaignId: number) {
-    try {
-      progressStore.start();
-      if (!walletStore.address) {
-        await walletStore.connect();
-      }
-      const donations = await contractService.getCampaignDonations(campaignId);
+      const campaigns = await contractService.getCampaigns();
       runInAction(() => {
-        this.donations[campaignId] = donations;
+        this.campaigns = campaigns;
       });
-      progressStore.finish();
     } catch (error) {
-      progressStore.reset();
-      if (error instanceof Error) {
-        throw error;
-      }
-      throw new Error(ErrorType.NETWORK);
-    }
-  }
-
-  async completeCampaign(campaignId: number) {
-    this.setLoading(true);
-    this.setError(null);
-
-    try {
-      progressStore.start();
-      if (!walletStore.address) {
-        await walletStore.connect();
-      }
-      await contractService.completeCampaign(campaignId);
-      await this.loadCampaigns();
-      progressStore.finish();
-    } catch (error) {
-      progressStore.reset();
-      if (error instanceof Error) {
-        throw error;
-      }
-      throw new Error(ErrorType.NETWORK);
+      console.error('Error loading campaigns:', error);
     } finally {
-      this.setLoading(false);
+      this.setLoadingState(false, false);
     }
   }
 
-  async canWithdrawFunds(campaignId: number): Promise<boolean> {
-    try {
-      if (!walletStore.address) {
-        return false;
-      }
-      return await contractService.canWithdrawFunds(campaignId);
-    } catch (error) {
-      console.error('Failed to check if can withdraw funds:', error);
-      return false;
-    }
-  }
+  async loadCampaignById(id: number) {
+    if (this.loading) return;
 
-  async withdrawFunds(campaignId: number) {
-    this.setLoading(true);
-    this.setError(null);
-
+    this.loading = true;
     try {
-      progressStore.start();
-      if (!walletStore.address) {
-        await walletStore.connect();
+      // Try multiple times with increasing delays
+      for (let i = 0; i < 3; i++) {
+        const campaign = await contractService.getCampaign(id);
+        if (campaign) {
+          runInAction(() => {
+            const existingIndex = this.campaigns.findIndex(c => c.id === id);
+            if (existingIndex !== -1) {
+              this.campaigns[existingIndex] = campaign;
+            } else {
+              this.campaigns.push(campaign);
+            }
+          });
+          return;
+        }
+        // Wait before retrying
+        await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
       }
-      await contractService.withdrawFunds(campaignId);
-      await this.loadCampaigns();
-      progressStore.finish();
+      console.error('Failed to load campaign after multiple attempts');
     } catch (error) {
-      progressStore.reset();
-      if (error instanceof Error) {
-        throw error;
-      }
-      throw new Error(ErrorType.NETWORK);
+      console.error('Error loading campaign:', error);
     } finally {
-      this.setLoading(false);
+      this.setLoadingState(false, false);
     }
   }
 
-  get filteredCampaigns(): Campaign[] {
-    if (!viewStore.showOnlyOwned || !walletStore.address) {
-      return this.campaigns;
+  async loadCampaignDonations(id: number) {
+    try {
+      const donations = await contractService.getCampaignDonations(id);
+      runInAction(() => {
+        this.donations[id] = donations;
+      });
+    } catch (error) {
+      console.error('Failed to load donations:', error);
+      runInAction(() => {
+        this.donations[id] = [];
+      });
+      throw error;
     }
-    return this.campaigns.filter(
-      campaign => campaign.owner.toLowerCase() === walletStore.address?.toLowerCase()
-    );
   }
 
-  reset = action(() => {
-    this.campaigns = [];
-    this.donations = {};
-    this.error = null;
-    this.loading = false;
-    this.initialLoading = false;
-  });
+  async donate(id: number, amount: number, message: string = '') {
+    await contractService.donate(id, amount, message);
+    await Promise.all([this.loadCampaigns(), this.loadCampaignDonations(id)]);
+  }
+
+  async completeCampaign(id: number) {
+    await contractService.completeCampaign(id);
+    await this.loadCampaigns();
+  }
+
+  async withdrawFunds(id: number) {
+    await contractService.withdrawFunds(id);
+    await this.loadCampaigns();
+  }
+
+  async canWithdrawFunds(id: number): Promise<boolean> {
+    return contractService.canWithdrawFunds(id);
+  }
+
+  private handleError(error: unknown) {
+    if (error instanceof Error) {
+      if (error.message.includes('user rejected')) {
+        throw new Error(ErrorType.USER_REJECTED);
+      }
+      if (error.message.includes('insufficient funds')) {
+        throw new Error(ErrorType.INSUFFICIENT_FUNDS);
+      }
+    }
+    throw new Error(ErrorType.NETWORK);
+  }
+
+  get filteredCampaigns() {
+    return this.showOnlyOwned
+      ? this.campaigns.filter(campaign => campaign.owner.toLowerCase() === walletStore.address?.toLowerCase())
+      : this.campaigns;
+  }
+
+  setViewType(type: ViewType) {
+    this.viewType = type;
+  }
+
+  setShowOnlyOwned(show: boolean) {
+    this.showOnlyOwned = show;
+  }
 }
 
-export const campaignStore = new CampaignStore(); 
+export const campaignStore = new CampaignStore();
