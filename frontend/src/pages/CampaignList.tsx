@@ -1,16 +1,18 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
 import { motion, AnimatePresence } from 'framer-motion';
-import { campaignStore } from '../stores/CampaignStore';
-import EmptyState from '../components/EmptyState';
-import CampaignListPlaceholder from '../components/CampaignListPlaceholder';
-import { useModal } from '../hooks/useModal';
-import { useError } from '../hooks/useError';
-import { ErrorType } from '../types/error';
-import { ViewToggle } from '../components/ui/ViewToggle';
-import CampaignFilter from '../components/ui/CampaignFilter';
-import CampaignListItem from '../components/CampaignListItem';
-import PageTransition from '../components/PageTransition';
+import { campaignStore } from '@stores/CampaignStore';
+import { useModal } from '@hooks/useModal';
+import { useError } from '@hooks/useError';
+import { ErrorType } from '@error';
+import {
+  EmptyState,
+  CampaignListPlaceholder,
+  CampaignListItem,
+  PageTransition,
+  ViewToggle,
+  CampaignFilter
+} from '@components/index';
 
 const CampaignList: React.FC = () => {
   const modal = useModal();

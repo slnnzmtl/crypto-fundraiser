@@ -9,13 +9,24 @@ declare global {
 }
 
 const CONTRACT_ADDRESS = process.env.REACT_APP_CONTRACT_ADDRESS;
+export const WALLET_DISCONNECTED_KEY = 'wallet_disconnected';
 
 // Check contract address on initialization
 if (!CONTRACT_ADDRESS) {
   console.error('Contract address is not configured in .env file');
-} else {
-  console.log('Using contract address:', CONTRACT_ADDRESS);
 }
+
+// Helper function to check if wallet is disconnected
+export const isWalletDisconnected = () => localStorage.getItem(WALLET_DISCONNECTED_KEY) === 'true';
+
+// Helper function to set wallet disconnected state
+export const setWalletDisconnected = (disconnected: boolean) => {
+  if (disconnected) {
+    localStorage.setItem(WALLET_DISCONNECTED_KEY, 'true');
+  } else {
+    localStorage.removeItem(WALLET_DISCONNECTED_KEY);
+  }
+};
 
 const CONTRACT_ABI = [
   {
@@ -72,6 +83,20 @@ const CONTRACT_ABI = [
   {
     "inputs": [{"internalType": "uint256", "name": "_campaignId", "type": "uint256"}],
     "name": "completeCampaign",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{"internalType": "uint256", "name": "_campaignId", "type": "uint256"}],
+    "name": "canWithdrawFunds",
+    "outputs": [{"internalType": "bool", "name": "", "type": "bool"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{"internalType": "uint256", "name": "_campaignId", "type": "uint256"}],
+    "name": "withdrawFunds",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -173,7 +198,21 @@ class ContractService {
     }
   }
 
+  disconnect() {
+    // Clean up our local state
+    this.provider?.removeAllListeners();
+    this.contract = null;
+    this.provider = null;
+    this.clearConnectionState();
+
+    // Store disconnected state
+    setWalletDisconnected(true);
+  }
+
   async connect(): Promise<string> {
+    // Clear disconnected state when explicitly connecting
+    setWalletDisconnected(false);
+
     if (!window.ethereum) {
       throw new Error(ErrorType.METAMASK);
     }
@@ -192,20 +231,32 @@ class ContractService {
             this.clearConnectionState();
           }, 30000); // 30 seconds timeout
 
-          // Ensure window.ethereum is defined and create provider
-          const ethereum = window.ethereum;
-          if (!ethereum) {
-            throw new Error(ErrorType.METAMASK);
-          }
-          
           // First check if we're already connected
-          const accounts = await ethereum.request({ method: 'eth_accounts' });
+          const accounts = await window.ethereum!.request({ method: 'eth_accounts' });
           if (!accounts || accounts.length === 0) {
-            // If not connected, request connection
-            await ethereum.request({ method: 'eth_requestAccounts' });
+            // Only request permissions if we're not already connected
+            const permissions = await window.ethereum!.request({
+              method: 'wallet_requestPermissions',
+              params: [{ eth_accounts: {} }]
+            });
+
+            if (!permissions || permissions.length === 0) {
+              throw new Error(ErrorType.USER_REJECTED);
+            }
+
+            // Get the accounts after permissions are granted
+            const newAccounts = await window.ethereum!.request({ method: 'eth_accounts' });
+            if (!newAccounts || newAccounts.length === 0) {
+              throw new Error(ErrorType.USER_REJECTED);
+            }
+          }
+
+          // Clean up any existing provider
+          if (this.provider) {
+            this.provider.removeAllListeners();
           }
           
-          this.provider = new ethers.BrowserProvider(ethereum);
+          this.provider = new ethers.BrowserProvider(window.ethereum!);
           const signer = await this.provider.getSigner();
           const contractAddress = this.validateContractAddress();
           
@@ -221,9 +272,9 @@ class ContractService {
             this.connectionTimeout = null;
           }
 
-          return signer.getAddress();
+          return accounts[0];
         } catch (error) {
-          console.log('Failed to connect:', error);
+          console.error('Failed to connect:', error);
           // Clear the connection state on error
           this.clearConnectionState();
           if (error instanceof Error) {
@@ -248,6 +299,11 @@ class ContractService {
   }
 
   async checkConnection(): Promise<string | null> {
+    // Check if wallet was explicitly disconnected
+    if (isWalletDisconnected()) {
+      return null;
+    }
+
     if (!window.ethereum) {
       throw new Error(ErrorType.METAMASK);
     }
@@ -278,6 +334,9 @@ class ContractService {
         CONTRACT_ABI,
         signer
       );
+
+      // Clear disconnected state since we're now connected
+      setWalletDisconnected(false);
 
       return accounts[0];
     } catch (error) {
@@ -486,6 +545,48 @@ class ContractService {
       await tx.wait();
     } catch (error) {
       console.error('Failed to complete campaign:', error);
+      if (error instanceof Error) {
+        if (error.message.includes('user rejected')) {
+          throw new Error(ErrorType.USER_REJECTED);
+        }
+        if (error.message.includes('insufficient funds')) {
+          throw new Error(ErrorType.INSUFFICIENT_FUNDS);
+        }
+        if (error.message.includes('-32002')) {
+          throw new Error(ErrorType.METAMASK_PENDING);
+        }
+      }
+      throw new Error(ErrorType.NETWORK);
+    }
+  }
+
+  async canWithdrawFunds(campaignId: number): Promise<boolean> {
+    if (!this.contract) {
+      throw new Error(ErrorType.METAMASK);
+    }
+
+    try {
+      // Get campaign details instead of using canWithdrawFunds
+      const campaign = await this.contract.campaigns(campaignId);
+      
+      // Can withdraw if campaign is completed and has balance
+      return campaign.completed && Number(campaign.balance) > 0;
+    } catch (error) {
+      console.error('Failed to check if can withdraw funds:', error);
+      return false;
+    }
+  }
+
+  async withdrawFunds(campaignId: number): Promise<void> {
+    if (!this.contract) {
+      throw new Error(ErrorType.METAMASK);
+    }
+
+    try {
+      const tx = await this.contract.withdrawFunds(campaignId);
+      await tx.wait();
+    } catch (error) {
+      console.error('Failed to withdraw funds:', error);
       if (error instanceof Error) {
         if (error.message.includes('user rejected')) {
           throw new Error(ErrorType.USER_REJECTED);

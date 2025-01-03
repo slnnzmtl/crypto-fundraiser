@@ -34,6 +34,7 @@ contract CryptoFundraiser {
     );
     event DonationReceived(uint indexed campaignId, address indexed donor, uint amount);
     event CampaignCompleted(uint indexed campaignId, bool successful);
+    event FundsWithdrawn(uint indexed campaignId, address indexed owner, uint amount);
 
     // Function to check if a campaign can be completed
     function canCompleteCampaign(uint _campaignId) public view returns (bool) {
@@ -60,6 +61,54 @@ contract CryptoFundraiser {
         }
 
         return false;
+    }
+
+    // Function to check if funds can be withdrawn
+    function canWithdrawFunds(uint _campaignId) public view returns (bool) {
+        require(_campaignId < campaignCount, "Campaign does not exist");
+        Campaign storage campaign = campaigns[_campaignId];
+        
+        // Only completed campaigns can be withdrawn from
+        if (!campaign.completed) {
+            return false;
+        }
+
+        // Only owner can withdraw
+        if (msg.sender != campaign.owner) {
+            return false;
+        }
+
+        // Must have balance to withdraw
+        if (campaign.balance == 0) {
+            return false;
+        }
+
+        // Must have reached goal to withdraw
+        if (campaign.balance < campaign.goal) {
+            return false;
+        }
+
+        return true;
+    }
+
+    // Function to withdraw funds from a completed campaign
+    function withdrawFunds(uint _campaignId) external {
+        require(_campaignId < campaignCount, "Campaign does not exist");
+        Campaign storage campaign = campaigns[_campaignId];
+        
+        require(campaign.completed, "Campaign is not completed");
+        require(msg.sender == campaign.owner, "Only owner can withdraw funds");
+        require(campaign.balance > 0, "No funds to withdraw");
+        require(campaign.balance >= campaign.goal, "Campaign did not reach its goal");
+
+        uint amount = campaign.balance;
+        campaign.balance = 0;
+        
+        // Transfer funds to owner
+        (bool sent,) = payable(campaign.owner).call{value: amount}("");
+        require(sent, "Failed to send funds");
+
+        emit FundsWithdrawn(_campaignId, campaign.owner, amount);
     }
 
     // Function to get a single campaign
