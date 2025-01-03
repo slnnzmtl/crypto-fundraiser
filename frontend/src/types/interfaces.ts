@@ -7,6 +7,7 @@ export interface ICampaign {
   pledged: number;
   endAt: Date;
   status: 'active' | 'completed' | 'failed';
+  image: string;
 }
 
 export interface IDonation {
@@ -35,3 +36,5 @@ export interface ICampaignStore {
   withdrawFunds(id: number): Promise<void>;
   canWithdrawFunds(id: number): Promise<boolean>;
 }
+
+export type ViewType = 'grid' | 'list';
