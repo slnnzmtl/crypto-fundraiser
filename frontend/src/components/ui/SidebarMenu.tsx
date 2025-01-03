@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useCallback } from 'react';
 import { observer } from 'mobx-react-lite';
-import { Button } from './primitives';
-import ConnectWallet from '../ConnectWallet';
-import { campaignStore } from '../../stores/CampaignStore';
+import { Button } from '@components/ui';
+import ConnectWallet from '@components/auth/ConnectWallet';
+import { campaignStore } from '@stores/CampaignStore';
 
 interface SidebarMenuProps {
   isOpen: boolean;
