@@ -1,7 +1,7 @@
 // Re-export primitives
 export * from './primitives';
 
-// UI Components
+// Export other UI components
 export { BurgerMenu } from './BurgerMenu';
 export { CampaignFilter } from './CampaignFilter';
 export { default as ImagePlaceholder } from './ImagePlaceholder';

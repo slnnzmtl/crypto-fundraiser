@@ -1,43 +1,32 @@
 import React from 'react';
-import { ICampaignHeader } from '../../../pages/interfaces';
+import { ICampaign } from '@interfaces';
 import { ImagePlaceholder } from '@components/ui';
 
-const CampaignHeader: React.FC<ICampaignHeader> = ({ campaign }) => {
-  const getStatusColor = () => {
-    if (campaign.status === 'completed') {
-      return 'bg-green-600/20 text-green-500';
-    }
-    return campaign.status === 'failed'
-      ? 'bg-red-600/20 text-red-500'
-      : 'bg-blue-600/20 text-blue-500';
-  };
+interface Props {
+  campaign: ICampaign;
+}
 
-  const getStatusText = () => {
-    switch (campaign.status) {
-      case 'completed':
-        return 'Completed';
-      case 'failed':
-        return 'Failed';
-      default:
-        return 'Active';
-    }
-  };
+const CampaignHeader: React.FC<Props> = ({ campaign }) => {
+  const [imageError, setImageError] = React.useState(false);
 
   return (
     <div className="space-y-6">
       <div className="aspect-video w-full">
-        <ImagePlaceholder className="rounded-lg" />
+        {!imageError && campaign.image ? (
+          <img
+            src={campaign.image}
+            alt={campaign.title}
+            className="w-full h-full object-cover rounded-lg"
+            onError={() => setImageError(true)}
+          />
+        ) : (
+          <ImagePlaceholder className="rounded-lg" />
+        )}
       </div>
-
-      <div className="flex justify-between items-start">
-        <h1 className="text-2xl font-bold">{campaign.title}</h1>
-        <div className="text-sm">
-          <span className={`px-2 py-1 rounded ${getStatusColor()}`}>
-            {getStatusText()}
-          </span>
-        </div>
+      <div>
+        <h1 className="text-2xl font-bold text-white">{campaign.title}</h1>
+        <p className="mt-2 text-gray-400 whitespace-pre-wrap">{campaign.description}</p>
       </div>
-      <p className="text-gray-400">{campaign.description}</p>
     </div>
   );
 };

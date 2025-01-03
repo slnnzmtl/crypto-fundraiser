@@ -1,8 +1,7 @@
 import React, { useEffect, useRef, useCallback } from 'react';
 import { observer } from 'mobx-react-lite';
-import { Button } from '@components/ui';
-import ConnectWallet from '@components/auth/ConnectWallet';
-import { campaignStore } from '@stores/CampaignStore';
+import { ConnectWallet, Button } from '@components/index';
+import { walletStore } from '@stores/index';
 
 interface SidebarMenuProps {
   isOpen: boolean;
@@ -26,9 +25,8 @@ const MenuItem: React.FC<MenuItemProps> = ({ children, className = '' }) => (
 
 export const SidebarMenu: React.FC<SidebarMenuProps> = observer(({ isOpen, onCreateCampaign, onClose }) => {
   const menuRef = useRef<HTMLDivElement>(null);
-
   const handleLogout = useCallback(async () => {
-    await campaignStore.logout();
+    await walletStore.disconnect();
     onClose();
   }, [onClose]);
 
@@ -70,7 +68,7 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = observer(({ isOpen, onCre
           <MenuItem onClick={() => {}}>
             <ConnectWallet />
           </MenuItem>
-          {campaignStore.address && (
+          {walletStore.address && (
             <MenuItem onClick={handleLogout} className="text-red-500">
               <Button variant="flat" className="w-full sm:w-auto text-red-500" onClick={handleLogout}>
                 Logout
