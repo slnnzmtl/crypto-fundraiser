@@ -1,38 +1,43 @@
-import { useEffect, useMemo } from 'react';
-import { campaignStore } from '../stores/CampaignStore';
-import { walletStore } from '../stores/WalletStore';
+import { useEffect, useMemo, useCallback, useState } from 'react';
+import { campaignStore } from '@stores/CampaignStore';
+import { walletStore } from '@stores/WalletStore';
 import { useError } from './useError';
-import { ErrorType } from '../types/error';
+import { ErrorType } from '@error';
+import { ICampaign } from '@interfaces';
+import { toCampaignModel } from '@utils/mappers';
 
 export const useCampaignData = (id: string | undefined) => {
   const { showError } = useError();
+  const [hasAttemptedLoad, setHasAttemptedLoad] = useState(false);
 
-  useEffect(() => {
-    const loadCampaign = async () => {
-      try {
-        if (!walletStore.address) {
-          await walletStore.connect();
-        }
-        await campaignStore.loadCampaigns();
-        if (id) {
-          await campaignStore.loadCampaignDonations(parseInt(id));
-        }
-      } catch (error) {
-        if (error instanceof Error) {
-          showError(error.message as ErrorType);
-        } else {
-          showError(ErrorType.NETWORK);
-        }
+  const loadCampaign = useCallback(async () => {
+    try {
+      if (!walletStore.address) {
+        await walletStore.connect();
       }
-    };
-
-    loadCampaign();
+      await campaignStore.loadCampaigns();
+      if (id) {
+        await campaignStore.loadCampaignDonations(parseInt(id));
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        showError(error.message as ErrorType);
+      } else {
+        showError(ErrorType.NETWORK);
+      }
+    } finally {
+      setHasAttemptedLoad(true);
+    }
   }, [id, showError]);
 
-  const campaign = useMemo(() => 
-    campaignStore.campaigns.find(c => c.id.toString() === id),
-    [id, campaignStore.campaigns]
-  );
+  useEffect(() => {
+    loadCampaign();
+  }, [loadCampaign]);
+
+  const campaign = useMemo(() => {
+    const found = campaignStore.campaigns.find(c => c.id.toString() === id);
+    return found ? toCampaignModel(found) : null;
+  }, [id, campaignStore.campaigns]);
 
   const donations = useMemo(() => 
     id ? campaignStore.donations[parseInt(id)] || [] : [],
@@ -42,6 +47,8 @@ export const useCampaignData = (id: string | undefined) => {
   return {
     campaign,
     donations,
-    isLoading: campaignStore.loading || campaignStore.initialLoading
+    isLoading: !hasAttemptedLoad || campaignStore.loading || campaignStore.initialLoading,
+    hasAttemptedLoad,
+    reload: loadCampaign
   };
 }; 
