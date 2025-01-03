@@ -1,7 +1,7 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
-import { campaignStore } from '../stores/CampaignStore';
-import { Button } from './ui/primitives';
+import { campaignStore } from '@stores/CampaignStore';
+import { Button } from '@components/ui';
 
 const ConnectWallet: React.FC = observer(() => {
   const handleConnect = async () => {
@@ -10,10 +10,6 @@ const ConnectWallet: React.FC = observer(() => {
     } catch (error) {
       console.error('Failed to connect wallet:', error);
     }
-  };
-
-  const formatAddress = (address: string) => {
-    return `${address.slice(0, 6)}...${address.slice(-4)}`;
   };
 
   return (

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Card } from './ui/primitives';
+import { Button, Card } from '@components/ui';
 
 interface Props {
   title: string;

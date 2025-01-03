@@ -1,5 +1,5 @@
 import React, { ReactNode } from 'react';
-import { Card } from './ui/primitives';
+import { Card } from '@components/ui';
 
 interface ErrorPageProps {
   icon: ReactNode;

@@ -1,6 +1,6 @@
 import React from 'react';
-import { Card } from './ui/primitives';
-import { campaignStore } from '../stores/CampaignStore';
+import { Card } from '@components/ui';
+import { campaignStore } from '@stores/CampaignStore';
 import { observer } from 'mobx-react-lite';
 
 const CampaignCard: React.FC = () => {
