@@ -9,8 +9,8 @@ export interface Campaign {
   pledged: string;
   startAt: Date;
   endAt: Date;
-  claimed: boolean;
   autoComplete: boolean;
+  status: 'active' | 'completed' | 'failed';
 }
 
 export interface CampaignInput {

@@ -7,9 +7,10 @@ export const toCampaignModel = (campaign: Campaign): ICampaign => {
     owner: campaign.owner,
     title: campaign.title,
     description: campaign.description,
-    goal: Number(campaign.goal),
-    pledged: Number(campaign.pledged),
+    goal: parseFloat(campaign.goal),
+    pledged: parseFloat(campaign.pledged),
     endAt: campaign.endAt,
-    status: campaign.claimed ? 'completed' : campaign.endAt.getTime() < Date.now() ? 'failed' : 'active'
+    status: campaign.status,
+    image: campaign.image
   };
 }; 
