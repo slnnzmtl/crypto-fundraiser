@@ -1,7 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Campaign } from '../types/campaign';
-import ImagePlaceholder from './ui/ImagePlaceholder';
+import { Campaign } from '../../../types/campaign';
+import ImagePlaceholder from '../../ui/ImagePlaceholder';
+import StatusBadge from '../../ui/StatusBadge';
 
 interface Props {
   campaign: Campaign;
@@ -19,45 +20,34 @@ const CampaignListItem: React.FC<Props> = ({ campaign, viewType }) => {
       `}
     >
       <div className={`
-        ${viewType === 'list' ? 'flex gap-6' : ''}
+        ${viewType === 'list' ? 'flex gap-2 sm:gap-6' : ''}
       `}>
         <div className={`
           ${viewType === 'list' 
-            ? 'w-48 h-32'
+            ? 'w-32 sm:w-48'
             : 'aspect-video'
           }
+          min-h-full
         `}>
           {campaign.image ? (
             <img 
               src={campaign.image} 
               alt={campaign.title} 
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover min-h-full"
             />
           ) : (
-            <ImagePlaceholder />
+            <ImagePlaceholder className="min-h-full" />
           )}
         </div>
-        <div className="p-4 flex-1">
-          <div className="flex justify-between items-start mb-2">
-            <h3 className="text-lg font-semibold">{campaign.title || 'Untitled Campaign'}</h3>
-            <span className={`text-sm px-2 py-1 rounded ${
-              campaign.claimed 
-                ? 'bg-green-600/20 text-green-500' 
-                : campaign.endAt.getTime() < Date.now() 
-                  ? 'bg-red-600/20 text-red-500'
-                  : 'bg-blue-600/20 text-blue-500'
-            }`}>
-              {campaign.claimed 
-                ? 'Completed' 
-                : campaign.endAt.getTime() < Date.now() 
-                  ? 'Ended'
-                  : 'Active'}
-            </span>
+        <div className="p-2 sm:p-4 flex-1">
+          <div className="flex flex-col sm:flex-row justify-between items-start mb-2">
+            <h3 className="text-base sm:text-lg font-semibold">{campaign.title || 'Untitled Campaign'}</h3>
+            <StatusBadge campaign={campaign} />
           </div>
           <p className="text-gray-400 text-sm mb-4 line-clamp-2">
             {campaign.description || 'No description'}
           </p>
-          <div className="flex justify-between items-center text-sm">
+          <div className="flex flex-col sm:flex-row justify-between sm:items-center text-sm">
             <div className="text-gray-400">
               Goal: <span className="text-white">{campaign.goal} ETH</span>
             </div>

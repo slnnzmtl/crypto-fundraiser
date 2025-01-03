@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card } from './ui/primitives';
+import { Card } from '../ui';
 
 const CampaignDetailsPlaceholder: React.FC = () => {
   return (
