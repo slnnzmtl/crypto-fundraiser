@@ -58,4 +58,7 @@ typechain-types
 
 # Hardhat files
 cache
-artifacts 
+artifacts
+
+# Smart contract data
+smart-contract/data/ 
