@@ -13,7 +13,7 @@ const NavigationMenu: React.FC = observer(() => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const handleGoHome = useCallback(() => {
-    navigate('/');
+    navigate('/campaigns');
     setIsMenuOpen(false);
   }, [navigate]);
 
@@ -31,15 +31,15 @@ const NavigationMenu: React.FC = observer(() => {
   }, []);
 
   return (
-    <header className="bg-dark-800 relative">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-dark-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Main Navigation */}
         <div className="flex h-16 sm:h-20 items-center justify-between">
-          <div className="flex items-center">
+          <div className="flex items-center gap-4">
             <Button variant="flat" className="text-lg sm:text-xl font-bold text-white" onClick={handleGoHome}>
               CryptoFundraiser
             </Button>
-            <Button variant="flat" onClick={handleCreateCampaign} className="hidden sm:block outline-none">
+            <Button variant="flat" onClick={handleCreateCampaign} className="hidden sm:block">
               Create Campaign
             </Button>
           </div>
@@ -55,7 +55,7 @@ const NavigationMenu: React.FC = observer(() => {
       {progressStore.isVisible && (
         <ProgressBar 
           progress={progressStore.progress} 
-          className="absolute bottom-0 left-0" 
+          className="absolute bottom-0 left-0 w-full" 
         />
       )}
     </header>
