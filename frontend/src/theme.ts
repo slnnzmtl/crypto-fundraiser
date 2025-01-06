@@ -11,6 +11,7 @@ export const theme = extendTheme({
   },
   colors: {
     dark: {
+      1000: '#000',
       900: '#111827',
       800: '#1F2937',
       700: '#374151',
@@ -20,6 +21,13 @@ export const theme = extendTheme({
       300: '#D1D5DB',
       200: '#E5E7EB',
       100: '#F3F4F6',
+    },
+    yellow: {
+      500: '#F59E0B',
+      400: '#FBBF24',
+      300: '#FCD34D',
+      200: '#FDE68A',
+      100: '#FEF3C7',
     },
   },
   components: {
