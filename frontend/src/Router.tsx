@@ -24,23 +24,35 @@ const Router: React.FC = observer(() => {
 
   return (
     <AppLayout>
-      <AnimatePresence mode="wait">
-        <Routes location={location} key={location.pathname}>
-          <Route
-            path="/"
-            element={
-              walletStore.address ? (
-                <Navigate to="/campaigns" replace />
-              ) : (
-                <WelcomeScreen />
-              )
-            }
-          />
-          <Route path="/campaigns" element={<ProtectedCampaignList />} />
-          <Route path="/campaigns/:id" element={<ProtectedCampaignDetails />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </AnimatePresence>
+      <Routes>
+        <Route
+          path="/"
+          element={
+            walletStore.address ? (
+              <Navigate to="/campaigns" replace />
+            ) : (
+              <WelcomeScreen />
+            )
+          }
+        />
+        <Route 
+          path="/campaigns" 
+          element={
+            <AnimatePresence mode="wait" initial={false}>
+              <ProtectedCampaignList />
+            </AnimatePresence>
+          } 
+        />
+        <Route 
+          path="/campaigns/:id" 
+          element={
+            <AnimatePresence mode="wait" initial={false}>
+              <ProtectedCampaignDetails />
+            </AnimatePresence>
+          } 
+        />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </AppLayout>
   );
 });
