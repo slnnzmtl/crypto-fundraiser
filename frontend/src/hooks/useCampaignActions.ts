@@ -13,6 +13,7 @@ export const useCampaignActions = (campaign: ICampaign | null, showError: (error
     try {
       await campaignStore.donate(campaign.id, parseFloat(amount), message);
       await campaignStore.loadCampaignById(campaign.id);
+      await campaignStore.loadCampaignDonations(campaign.id);
     } catch (error) {
       if (error instanceof Error) {
         showError(error.message as ErrorType);

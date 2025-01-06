@@ -17,6 +17,8 @@ export const useCampaignData = (id: string | undefined) => {
         await walletStore.connect();
       }
 
+      console.log('Loading campaign', id);
+
       await Promise.all([
         campaignStore.loadCampaignById(parseInt(id)),
         campaignStore.loadCampaignDonations(parseInt(id))
@@ -34,16 +36,27 @@ export const useCampaignData = (id: string | undefined) => {
 
   useEffect(() => {
     loadCampaign();
-  }, []);
+  }, [loadCampaign]);
 
   const campaign = useMemo(() => {
+    if (!id) return null;
+    
     const found = campaignStore.campaigns.find(c => c.id.toString() === id);
+    console.log('Campaign updated:', found);
     return found ? toCampaignModel(found) : null;
-  }, [id, campaignStore.campaigns]);
+  }, [
+    id,
+    // Track the specific campaign's data changes
+    campaignStore.campaigns.find(c => c.id.toString() === id)?.pledged,
+    campaignStore.campaigns.find(c => c.id.toString() === id)?.status,
+    campaignStore.campaigns.length
+  ]);
 
   const donations = useMemo(() => {
     if (!id) return [];
-    const campaignDonations = campaignStore.donations[parseInt(id)] || [];
+    
+    const campaignId = parseInt(id);
+    const campaignDonations = campaignStore.donations[campaignId] || [];
     
     return campaignDonations.map(donation => ({
       ...donation,
@@ -51,7 +64,12 @@ export const useCampaignData = (id: string | undefined) => {
         donation.timestamp : 
         new Date(donation.timestamp)
     }));
-  }, [id, Object.keys(campaignStore.donations).length]);
+  }, [
+    id,
+    // Track both the donations array length and the specific campaign's donations
+    id ? campaignStore.donations[parseInt(id)]?.length : 0,
+    id ? JSON.stringify(campaignStore.donations[parseInt(id)] || []) : '[]'
+  ]);
 
   return {
     campaign,
