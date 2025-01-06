@@ -1,12 +1,16 @@
 export enum ErrorType {
-  METAMASK = 'METAMASK',
-  NETWORK = 'NETWORK',
-  NOT_FOUND = 'NOT_FOUND',
-  UNAUTHORIZED = 'UNAUTHORIZED',
-  USER_REJECTED = 'USER_REJECTED',
-  METAMASK_PENDING = 'METAMASK_PENDING',
-  INSUFFICIENT_FUNDS = 'INSUFFICIENT_FUNDS',
-  GET_CAMPAIGNS_FAILED = 'GET_CAMPAIGNS_FAILED'
+  METAMASK = 'Please install MetaMask',
+  USER_REJECTED = 'Transaction was rejected',
+  METAMASK_PENDING = 'Please complete the pending MetaMask action',
+  INSUFFICIENT_FUNDS = 'Insufficient funds',
+  NETWORK = 'Network error occurred',
+  GET_CAMPAIGNS_FAILED = 'Failed to get campaigns',
+  CREATE_CAMPAIGN_FAILED = 'Failed to create campaign',
+  NETWORK_ERROR = 'Network connection error',
+  CONTRACT_ERROR = 'Smart contract error',
+  PROVIDER_ERROR = 'Provider connection error',
+  UNAUTHORIZED = 'Unauthorized action',
+  NOT_CONNECTED = 'Not connected to wallet'
 }
 
 export interface ErrorAction {

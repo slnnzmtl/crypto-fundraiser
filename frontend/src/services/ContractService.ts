@@ -1,6 +1,7 @@
 import { ethers } from 'ethers';
 import { Campaign, CampaignInput } from '../types/campaign';
 import { ErrorType } from '../types/error';
+import CryptoFundraiserArtifact from '../abi/CryptoFundraiser.json';
 
 declare global {
   interface Window {
@@ -28,202 +29,44 @@ export const setWalletDisconnected = (disconnected: boolean) => {
   }
 };
 
-const CONTRACT_ABI = [
-  {
-    "inputs": [],
-    "name": "campaignCount",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [{"type": "uint256"}],
-    "name": "campaigns",
-    "outputs": [
-      {"internalType": "address payable", "name": "owner", "type": "address"},
-      {"internalType": "string", "name": "title", "type": "string"},
-      {"internalType": "string", "name": "description", "type": "string"},
-      {"internalType": "string", "name": "image", "type": "string"},
-      {"internalType": "uint256", "name": "goal", "type": "uint256"},
-      {"internalType": "uint256", "name": "deadline", "type": "uint256"},
-      {"internalType": "uint256", "name": "balance", "type": "uint256"},
-      {"internalType": "bool", "name": "completed", "type": "bool"},
-      {"internalType": "bool", "name": "autoComplete", "type": "bool"},
-      {"internalType": "uint8", "name": "status", "type": "uint8"}
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {"internalType": "string", "name": "title", "type": "string"},
-      {"internalType": "string", "name": "description", "type": "string"},
-      {"internalType": "uint256", "name": "goalInWei", "type": "uint256"},
-      {"internalType": "uint256", "name": "durationInDays", "type": "uint256"},
-      {"internalType": "string", "name": "image", "type": "string"},
-      {"internalType": "bool", "name": "autoComplete", "type": "bool"}
-    ],
-    "name": "createCampaign",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {"internalType": "uint256", "name": "_campaignId", "type": "uint256"},
-      {"internalType": "string", "name": "_message", "type": "string"}
-    ],
-    "name": "donate",
-    "outputs": [],
-    "stateMutability": "payable",
-    "type": "function"
-  },
-  {
-    "inputs": [{"internalType": "uint256", "name": "_campaignId", "type": "uint256"}],
-    "name": "completeCampaign",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [{"internalType": "uint256", "name": "_campaignId", "type": "uint256"}],
-    "name": "canWithdrawFunds",
-    "outputs": [{"internalType": "bool", "name": "", "type": "bool"}],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [{"internalType": "uint256", "name": "_campaignId", "type": "uint256"}],
-    "name": "withdrawFunds",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [{"internalType": "uint256", "name": "_campaignId", "type": "uint256"}],
-    "name": "getCampaignStatus",
-    "outputs": [{"internalType": "uint8", "name": "", "type": "uint8"}],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "uint256",
-        "name": "campaignId",
-        "type": "uint256"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "owner",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "string",
-        "name": "title",
-        "type": "string"
-      },
-      {
-        "indexed": false,
-        "internalType": "string",
-        "name": "description",
-        "type": "string"
-      },
-      {
-        "indexed": false,
-        "internalType": "string",
-        "name": "image",
-        "type": "string"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "goal",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "deadline",
-        "type": "uint256"
-      }
-    ],
-    "name": "CampaignCreated",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "uint256",
-        "name": "campaignId",
-        "type": "uint256"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "donor",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "string",
-        "name": "message",
-        "type": "string"
-      }
-    ],
-    "name": "DonationReceived",
-    "type": "event"
-  },
-  {
-    "inputs": [{"internalType": "uint256", "name": "_campaignId", "type": "uint256"}],
-    "name": "getCampaign",
-    "outputs": [
-      {
-        "components": [
-          {"internalType": "address payable", "name": "owner", "type": "address"},
-          {"internalType": "string", "name": "title", "type": "string"},
-          {"internalType": "string", "name": "description", "type": "string"},
-          {"internalType": "string", "name": "image", "type": "string"},
-          {"internalType": "uint256", "name": "goal", "type": "uint256"},
-          {"internalType": "uint256", "name": "deadline", "type": "uint256"},
-          {"internalType": "uint256", "name": "balance", "type": "uint256"},
-          {"internalType": "bool", "name": "completed", "type": "bool"},
-          {"internalType": "bool", "name": "autoComplete", "type": "bool"},
-          {"internalType": "uint8", "name": "status", "type": "uint8"}
-        ],
-        "internalType": "struct CryptoFundraiser.Campaign",
-        "name": "",
-        "type": "tuple"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
+// Type for raw campaign data from contract
+interface RawCampaign {
+  owner: string;
+  title: string;
+  description: string;
+  image: string;
+  goal: bigint;      // uint96
+  deadline: bigint;  // uint40
+  balance: bigint;   // uint96
+  completed: boolean;
+  autoComplete: boolean;
+  status: number;    // enum Status
+}
+
+// Centralized error handling function
+function handleError(error: any, context: string) {
+  console.error(`Error in ${context}:`, error);
+  if (error instanceof Error) {
+    if (error.message.includes('user rejected')) {
+      throw new Error(ErrorType.USER_REJECTED);
+    }
+    if (error.message.includes('insufficient funds')) {
+      throw new Error(ErrorType.INSUFFICIENT_FUNDS);
+    }
+    if (error.message.includes('-32002')) {
+      throw new Error(ErrorType.METAMASK_PENDING);
+    }
+    throw new Error(`${ErrorType.NETWORK}: ${error.message}`);
   }
-];
+  throw new Error(ErrorType.NETWORK);
+}
 
 class ContractService {
   private provider: ethers.BrowserProvider | null = null;
   private contract: ethers.Contract | null = null;
   private connectionPromise: Promise<string> | null = null;
   private connectionTimeout: NodeJS.Timeout | null = null;
+  private cachedCampaignCount: number | null = null; // Cache for campaign count
 
   private validateContractAddress(): string {
     if (!CONTRACT_ADDRESS) {
@@ -251,92 +94,58 @@ class ContractService {
     setWalletDisconnected(true);
   }
 
-  async connect(): Promise<string> {
-    // Clear disconnected state when explicitly connecting
-    setWalletDisconnected(false);
-
+  private async establishConnection(): Promise<string> {
     if (!window.ethereum) {
       throw new Error(ErrorType.METAMASK);
     }
 
-    // If there's already a connection attempt in progress, return it
-    if (this.connectionPromise) {
-      return this.connectionPromise;
+    const ethereum = window.ethereum;
+    if (!ethereum) {
+      throw new Error(ErrorType.METAMASK);
     }
 
+    // Request account access
+    const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+    if (!accounts || accounts.length === 0) {
+      throw new Error(ErrorType.METAMASK);
+    }
+
+    this.provider = new ethers.BrowserProvider(ethereum);
+    const signer = await this.provider.getSigner();
+    const contractAddress = this.validateContractAddress();
+    
+    this.contract = new ethers.Contract(
+      contractAddress,
+      CryptoFundraiserArtifact.abi,
+      signer
+    );
+
+    // Clear disconnected state since we're now connected
+    setWalletDisconnected(false);
+
+    return accounts[0];
+  }
+
+  async connect(): Promise<string> {
     try {
-      // Create a new connection promise with timeout
-      this.connectionPromise = (async () => {
-        try {
-          // Set a timeout to clear the connection state if it takes too long
-          this.connectionTimeout = setTimeout(() => {
-            this.clearConnectionState();
-          }, 30000); // 30 seconds timeout
+      // If there's a connection in progress, return it
+      if (this.connectionPromise) {
+        return await this.connectionPromise;
+      }
 
-          // First check if we're already connected
-          const accounts = await window.ethereum!.request({ method: 'eth_accounts' });
-          if (!accounts || accounts.length === 0) {
-            // Only request permissions if we're not already connected
-            const permissions = await window.ethereum!.request({
-              method: 'wallet_requestPermissions',
-              params: [{ eth_accounts: {} }]
-            });
+      // Create a new connection promise
+      this.connectionPromise = this.establishConnection();
 
-            if (!permissions || permissions.length === 0) {
-              throw new Error(ErrorType.USER_REJECTED);
-            }
-
-            // Get the accounts after permissions are granted
-            const newAccounts = await window.ethereum!.request({ method: 'eth_accounts' });
-            if (!newAccounts || newAccounts.length === 0) {
-              throw new Error(ErrorType.USER_REJECTED);
-            }
-          }
-
-          // Clean up any existing provider
-          if (this.provider) {
-            this.provider.removeAllListeners();
-          }
-          
-          this.provider = new ethers.BrowserProvider(window.ethereum!);
-          const signer = await this.provider.getSigner();
-          const contractAddress = this.validateContractAddress();
-          
-          this.contract = new ethers.Contract(
-            contractAddress,
-            CONTRACT_ABI,
-            signer
-          );
-
-          // Clear the timeout since we succeeded
-          if (this.connectionTimeout) {
-            clearTimeout(this.connectionTimeout);
-            this.connectionTimeout = null;
-          }
-
-          return accounts[0];
-        } catch (error) {
-          console.error('Failed to connect:', error);
-          // Clear the connection state on error
-          this.clearConnectionState();
-          if (error instanceof Error) {
-            if (error.message.includes('user rejected')) {
-              throw new Error(ErrorType.USER_REJECTED);
-            }
-            // Handle the specific error code for multiple requests
-            if (error.message.includes('-32002')) {
-              throw new Error(ErrorType.METAMASK_PENDING);
-            }
-          }
-          throw error;
-        }
-      })();
+      // Set up timeout to clear connection promise
+      this.connectionTimeout = setTimeout(() => {
+        this.clearConnectionState();
+      }, 30000); // Clear after 30 seconds
 
       return await this.connectionPromise;
     } catch (error) {
-      // Clear the connection state on error
       this.clearConnectionState();
-      throw error;
+      handleError(error, 'connect');
+      return '';
     }
   }
 
@@ -346,86 +155,84 @@ class ContractService {
       return null;
     }
 
-    if (!window.ethereum) {
-      throw new Error(ErrorType.METAMASK);
-    }
-
     try {
       // If there's a connection in progress, wait for it
       if (this.connectionPromise) {
         return await this.connectionPromise;
       }
 
-      const ethereum = window.ethereum;
-      if (!ethereum) {
-        throw new Error(ErrorType.METAMASK);
-      }
-
-      // Check if already connected without prompting
-      const accounts = await ethereum.request({ method: 'eth_accounts' });
-      if (!accounts || accounts.length === 0) {
-        return null;
-      }
-
-      this.provider = new ethers.BrowserProvider(ethereum);
-      const signer = await this.provider.getSigner();
-      const contractAddress = this.validateContractAddress();
-      
-      this.contract = new ethers.Contract(
-        contractAddress,
-        CONTRACT_ABI,
-        signer
-      );
-
-      // Clear disconnected state since we're now connected
-      setWalletDisconnected(false);
-
-      return accounts[0];
+      return await this.establishConnection();
     } catch (error) {
-      console.error('Failed to check connection:', error);
-      // Don't throw on check connection errors, just return null
+      handleError(error, 'checkConnection');
       return null;
     }
   }
 
-  async getCampaigns(): Promise<Campaign[]> {
-    if (!this.contract || !this.provider) {
+  private async fetchCampaignCount(): Promise<number> {
+    if (!this.contract) {
       throw new Error(ErrorType.METAMASK);
     }
 
-    try {
+    if (this.cachedCampaignCount === null) {
       const count = await this.contract.campaignCount();
-      const campaigns: Campaign[] = [];
+      console.log('Campaign count:', count);
+      this.cachedCampaignCount = Number(count);
+    }
+    return this.cachedCampaignCount;
+  }
 
-      for (let i = 0; i < count; i++) {
-        try {
-          const campaign = await this.contract.campaigns(i);
-          const status = await this.contract.getCampaignStatus(i);
-          const statusMap = ['active', 'completed', 'failed'];
-          
-          campaigns.push({
-            id: i,
-            creator: campaign.owner,
-            owner: campaign.owner,
-            title: campaign.title || '',
-            description: campaign.description || '',
-            image: campaign.image || '',
-            goal: ethers.formatEther(campaign.goal),
-            pledged: ethers.formatEther(campaign.balance),
-            startAt: new Date(0),
-            endAt: new Date(Number(campaign.deadline) * 1000),
-            autoComplete: campaign.autoComplete,
-            status: statusMap[status] as 'active' | 'completed' | 'failed'
-          });
-        } catch (error) {
-          console.error(`Failed to get campaign ${i}:`, error);
-        }
+  async getCampaigns(): Promise<Campaign[]> {
+    try {
+      // Use existing connection check
+      const account = await this.checkConnection();
+      if (!account || !this.contract) {
+        throw new Error(ErrorType.METAMASK);
       }
 
-      return campaigns;
+      const count = await this.fetchCampaignCount();
+      
+      // If count is 0 or decoding fails, return empty array
+      if (count === 0) {
+        console.log('No campaigns found');
+        return [];
+      }
+
+      const campaigns = await this.contract.getCampaigns() as RawCampaign[];
+      console.log('Raw campaigns:', campaigns);
+      
+      if (!campaigns || campaigns.length === 0) {
+        return [];
+      }
+
+      return campaigns.map((campaign, index) => {
+        try {
+          // Handle BigInt values properly
+          const goal = campaign.goal?.toString() || '0';
+          const deadline = campaign.deadline?.toString() || '0';
+          const balance = campaign.balance?.toString() || '0';
+
+          return {
+            id: index,
+            creator: campaign.owner,
+            owner: campaign.owner,
+            title: campaign.title?.trim() || '',
+            description: campaign.description?.trim() || '',
+            image: campaign.image?.trim() || '',
+            goal: ethers.formatEther(goal),
+            pledged: ethers.formatEther(balance),
+            startAt: new Date(0),
+            endAt: new Date(Number(deadline) * 1000),
+            autoComplete: campaign.autoComplete,
+            status: this.mapStatus(campaign.status)
+          };
+        } catch (error) {
+          console.error(`Failed to process campaign at index ${index}:`, error);
+          return null;
+        }
+      }).filter((campaign): campaign is Campaign => campaign !== null);
     } catch (error) {
-      console.error('Failed to get campaigns:', error);
-      throw new Error(ErrorType.GET_CAMPAIGNS_FAILED);
+      handleError(error, 'getCampaigns');
+      return [];
     }
   }
 
@@ -487,33 +294,28 @@ class ContractService {
 
       const goalInWei = ethers.parseEther(goal.toString());
       
+      // Ensure durationInDays is uint16
+      const duration = Math.min(Math.max(1, durationInDays), 180);
+      
       const tx = await this.contract.createCampaign(
-        title,
-        description,
+        title.trim(),
+        description.trim(),
         goalInWei,
-        durationInDays,
-        image || '',
+        duration,
+        image?.trim() || '',
         autoComplete
       );
       await tx.wait();
+
+      // Invalidate cache after creating a new campaign
+      this.cachedCampaignCount = null;
 
       // Get the current campaign count (new campaign ID)
       const count = await this.contract.campaignCount();
       return Number(count) - 1;
     } catch (error) {
-      console.error('Failed to create campaign:', error);
-      if (error instanceof Error) {
-        if (error.message.includes('user rejected')) {
-          throw new Error(ErrorType.USER_REJECTED);
-        }
-        if (error.message.includes('insufficient funds')) {
-          throw new Error(ErrorType.INSUFFICIENT_FUNDS);
-        }
-        if (error.message.includes('-32002')) {
-          throw new Error(ErrorType.METAMASK_PENDING);
-        }
-      }
-      throw new Error(ErrorType.NETWORK);
+      handleError(error, 'createCampaign');
+      return -1;
     }
   }
 
@@ -523,70 +325,61 @@ class ContractService {
     }
 
     try {
+      // Convert amount to Wei and ensure it's a valid number
       const amountInWei = ethers.parseEther(amount.toString());
-      const tx = await this.contract.donate(campaignId, message, { value: amountInWei });
-      await tx.wait();
-    } catch (error) {
-      console.error('Failed to donate:', error);
-      if (error instanceof Error) {
-        if (error.message.includes('user rejected')) {
-          throw new Error(ErrorType.USER_REJECTED);
-        }
-        if (error.message.includes('insufficient funds')) {
-          throw new Error(ErrorType.INSUFFICIENT_FUNDS);
-        }
-        if (error.message.includes('-32002')) {
-          throw new Error(ErrorType.METAMASK_PENDING);
-        }
-      }
-      throw new Error(ErrorType.NETWORK);
-    }
-  }
-
-  async getCampaignDonations(campaignId: number): Promise<{ donor: string; amount: string; message: string; timestamp: Date; }[]> {
-    if (!this.contract || !this.provider) {
-      throw new Error(ErrorType.METAMASK);
-    }
-
-    try {
-      // Get donation events for this campaign
-      const filter = {
-        address: this.contract.target as string,
-        topics: [
-          ethers.id("DonationReceived(uint256,address,uint256,string)"),
-          ethers.toBeHex(campaignId, 32)
-        ]
-      };
       
-      const events = await this.provider.getLogs({
-        ...filter,
-        fromBlock: 0,
-        toBlock: 'latest'
+      // Ensure message is never undefined or null
+      console.log('Preparing donation:', {
+        campaignId,
+        message,
+        value: amountInWei.toString()
       });
+
+      // Get gas estimate first
+      const gasEstimate = await this.contract.donate.estimateGas(
+        campaignId,
+        message || '',
+        { value: amountInWei }
+      );
+
+      console.log('Gas estimate:', gasEstimate.toString());
+
+      // Add 20% buffer to gas estimate
+      const gasLimit = Math.floor(Number(gasEstimate) * 1.2);
+
+      console.log({
+        campaignId: campaignId,
+        message: message || '',
+        value: amountInWei.toString(),
+        gasLimit
+      });
+      // Send transaction with estimated gas
+      const tx = await this.contract.donate(
+        campaignId,
+        message || '',
+        {
+          value: amountInWei,
+          gasLimit
+        }
+      );
+
+      console.log('Donation transaction sent:', tx);
+      const receipt = await tx.wait();
+      console.log('Donation confirmed:', receipt);
+    } catch (error: any) {
+      console.error('Donation error:', error);
       
-      // Map events to donation objects
-      const donations = await Promise.all(events.map(async (event) => {
-        const block = await event.getBlock();
-        // Donor is the second topic (index 2)
-        const donor = ethers.getAddress('0x' + event.topics[2].slice(26));
-        // Amount and message are in the data field
-        const [amount, message] = ethers.AbiCoder.defaultAbiCoder().decode(['uint256', 'string'], event.data);
-        
-        return {
-          donor,
-          amount: ethers.formatEther(amount),
-          message: message || '',
-          timestamp: new Date(block.timestamp * 1000)
-        };
-      }));
+      // Check for specific error cases
+      if (error.code === 'UNPREDICTABLE_GAS_LIMIT') {
+        const reason = error.reason || 'Transaction would fail';
+        throw new Error(`${ErrorType.CONTRACT_ERROR}: ${reason}`);
+      }
       
-      // Sort by timestamp, most recent first
-      return donations.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-    } catch (error) {
-      console.error('Failed to get campaign donations:', error);
-      throw new Error(ErrorType.NETWORK);
+      handleError(error, 'donate');
     }
   }
+
+  
 
   async completeCampaign(campaignId: number): Promise<void> {
     if (!this.contract) {
@@ -594,39 +387,11 @@ class ContractService {
     }
 
     try {
-      const tx = await this.contract.completeCampaign(campaignId);
+      // Ensure campaignId is uint32
+      const tx = await this.contract.completeCampaign(campaignId >>> 0);
       await tx.wait();
     } catch (error) {
-      console.error('Failed to complete campaign:', error);
-      if (error instanceof Error) {
-        if (error.message.includes('user rejected')) {
-          throw new Error(ErrorType.USER_REJECTED);
-        }
-        if (error.message.includes('insufficient funds')) {
-          throw new Error(ErrorType.INSUFFICIENT_FUNDS);
-        }
-        if (error.message.includes('-32002')) {
-          throw new Error(ErrorType.METAMASK_PENDING);
-        }
-      }
-      throw new Error(ErrorType.NETWORK);
-    }
-  }
-
-  async canWithdrawFunds(campaignId: number): Promise<boolean> {
-    if (!this.contract) {
-      throw new Error(ErrorType.METAMASK);
-    }
-
-    try {
-      // Get campaign details instead of using canWithdrawFunds
-      const campaign = await this.contract.campaigns(campaignId);
-      
-      // Can withdraw if campaign is completed and has balance
-      return campaign.completed && Number(campaign.balance) > 0;
-    } catch (error) {
-      console.error('Failed to check if can withdraw funds:', error);
-      return false;
+      handleError(error, 'completeCampaign');
     }
   }
 
@@ -636,25 +401,69 @@ class ContractService {
     }
 
     try {
-      const tx = await this.contract.withdrawFunds(campaignId);
+      // Ensure campaignId is uint32
+      const tx = await this.contract.withdrawFunds(campaignId >>> 0);
       await tx.wait();
     } catch (error) {
-      console.error('Failed to withdraw funds:', error);
-      if (error instanceof Error) {
-        if (error.message.includes('user rejected')) {
-          throw new Error(ErrorType.USER_REJECTED);
+      handleError(error, 'withdrawFunds');
+    }
+  }
+
+  async canWithdrawFunds(campaignId: number): Promise<boolean> {
+    if (!this.contract) {
+      throw new Error(ErrorType.METAMASK);
+    }
+
+    try {
+      // Ensure campaignId is uint32
+      return await this.contract.canWithdrawFunds(campaignId >>> 0);
+    } catch (error) {
+      handleError(error, 'canWithdrawFunds');
+      return false;
+    }
+  }
+
+  async getCampaignDonations(campaignId: number): Promise<{ donor: string; amount: string; message: string; timestamp: Date; }[]> {
+    if (!this.contract || !this.provider) {
+      throw new Error(ErrorType.METAMASK);
+    }
+
+    try {
+      // Get donation events for this campaign using the correct event signature
+      const filter = this.contract.filters.DonationReceived(
+        campaignId,  // campaignId as uint32
+        null              // any donor address
+      );
+      
+      const events = await this.contract.queryFilter(filter, 0, 'latest');
+      console.log('Found donation events:', events);
+      
+      // Map events to donation objects
+      const donations = await Promise.all(events.map(async (event) => {
+        if (!('args' in event) || !event.args) {
+          console.error('Event is not properly formatted:', event);
+          return null;
         }
-        if (error.message.includes('insufficient funds')) {
-          throw new Error(ErrorType.INSUFFICIENT_FUNDS);
-        }
-        if (error.message.includes('-32002')) {
-          throw new Error(ErrorType.METAMASK_PENDING);
-        }
-        if (error.message.includes('Only owner can withdraw funds')) {
-          throw new Error(ErrorType.UNAUTHORIZED);
-        }
-      }
-      throw new Error(ErrorType.NETWORK);
+
+        const block = await event.getBlock();
+        const eventLog = event as ethers.EventLog;
+
+        return {
+          donor: eventLog.args[1], // donor is the second argument
+          amount: ethers.formatEther(eventLog.args[2]), // amount is the third argument
+          message: eventLog.args[3] || '', // message is the fourth argument
+          timestamp: new Date(block.timestamp * 1000)
+        };
+      }));
+      
+      // Filter out null values and sort by timestamp
+      return donations
+        .filter((d): d is NonNullable<typeof d> => d !== null)
+        .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+    } catch (error) {
+      console.error('Error getting campaign donations:', error);
+      handleError(error, 'getCampaignDonations');
+      return [];
     }
   }
 }
