@@ -9,57 +9,72 @@ contract CryptoFundraiser {
         string title;
         string description;
         string image;
-        uint goal;
-        uint deadline;
-        uint balance;
+        uint96 goal;
+        uint40 deadline;
+        uint96 balance;
         bool completed;
         bool autoComplete;
         Status status;
     }
 
-    // Mapping to store all campaigns
-    mapping(uint => Campaign) public campaigns;
-    uint public campaignCount = 0;
+    // Packed storage variables
+    uint32 public campaignCount;
 
-    // Mapping to store donations
-    mapping(address => mapping(uint => uint)) public donations;
+    // Constants - reduced sizes but kept reasonable limits
+    uint96 public constant MAX_GOAL = 100 ether;  // Reduced from 1000 to 100 ETH
+    uint16 public constant MAX_DURATION_DAYS = 180; // Reduced from 365 to 180 days
+    uint8 public constant MAX_TITLE_LENGTH = 50;    // Reduced from 100 to 50
+    uint16 public constant MAX_DESCRIPTION_LENGTH = 500; // Reduced from 1000 to 500
+    uint8 public constant MAX_IMAGE_URL_LENGTH = 200;   // Reduced from 300 to 200
 
-    // Events
+    // Mappings
+    mapping(uint32 => Campaign) public campaigns;
+    mapping(address => mapping(uint32 => uint96)) public donations;
+
+    // Events - optimized by removing redundant data
     event CampaignCreated(
-        uint indexed campaignId,
+        uint32 indexed campaignId,
         address indexed owner,
         string title,
-        string description,
-        string image,
-        uint goal,
-        uint deadline
+        uint96 goal,
+        uint40 deadline
     );
+
     event DonationReceived(
-        uint indexed campaignId,
+        uint32 indexed campaignId,
         address indexed donor,
-        uint amount,
+        uint96 amount,
         string message
     );
-    event CampaignCompleted(uint indexed campaignId, bool successful);
-    event FundsWithdrawn(uint indexed campaignId, address indexed owner, uint amount);
 
-    // Function to create a campaign
+    event CampaignCompleted(uint32 indexed campaignId, bool successful);
+    event FundsWithdrawn(uint32 indexed campaignId, uint96 amount);
+
+    // Function to create a campaign - optimized parameters
     function createCampaign(
-        string memory title,
-        string memory description,
-        uint goalInWei,
-        uint durationInDays,
-        string memory image,
+        string calldata title,
+        string calldata description,
+        uint96 goalInWei,
+        uint16 durationInDays,
+        string calldata image,
         bool autoComplete
     ) external {
-        require(goalInWei > 0, "Goal must be greater than 0");
-        require(durationInDays > 0, "Duration must be greater than 0");
-        require(bytes(title).length > 0, "Title cannot be empty");
-        require(bytes(description).length > 0, "Description cannot be empty");
+        require(goalInWei > 0 && goalInWei <= MAX_GOAL, "Invalid goal");
+        require(durationInDays > 0 && durationInDays <= MAX_DURATION_DAYS, "Invalid duration");
+        
+        bytes memory titleBytes = bytes(title);
+        bytes memory descBytes = bytes(description);
+        bytes memory imageBytes = bytes(image);
+        
+        require(titleBytes.length > 0 && titleBytes.length <= MAX_TITLE_LENGTH, "Invalid title");
+        require(descBytes.length > 0 && descBytes.length <= MAX_DESCRIPTION_LENGTH, "Invalid description");
+        require(imageBytes.length <= MAX_IMAGE_URL_LENGTH, "Invalid image URL");
 
-        uint deadline = block.timestamp + (durationInDays * 1 days);
+        uint40 deadline = uint40(block.timestamp + (uint40(durationInDays) * 1 days));
+        require(deadline > block.timestamp, "Invalid deadline");
 
-        campaigns[campaignCount] = Campaign({
+        uint32 newCampaignId = campaignCount;
+        campaigns[newCampaignId] = Campaign({
             owner: payable(msg.sender),
             title: title,
             description: description,
@@ -73,19 +88,20 @@ contract CryptoFundraiser {
         });
 
         emit CampaignCreated(
-            campaignCount,
+            newCampaignId,
             msg.sender,
             title,
-            description,
-            image,
             goalInWei,
             deadline
         );
-        campaignCount++;
+        
+        unchecked {
+            campaignCount++;
+        }
     }
 
     // Function to get campaign status
-    function getCampaignStatus(uint _campaignId) public view returns (Status) {
+    function getCampaignStatus(uint32 _campaignId) public view returns (Status) {
         require(_campaignId < campaignCount, "Campaign does not exist");
         Campaign storage campaign = campaigns[_campaignId];
         
@@ -100,11 +116,11 @@ contract CryptoFundraiser {
         return Status.Active;
     }
 
-    // Function to get all campaigns with status
+    // Function to get all campaigns
     function getCampaigns() public view returns (Campaign[] memory) {
         Campaign[] memory allCampaigns = new Campaign[](campaignCount);
         
-        for(uint i = 0; i < campaignCount; i++) {
+        for(uint32 i = 0; i < campaignCount; i++) {
             Campaign storage campaign = campaigns[i];
             Status currentStatus = getCampaignStatus(i);
             
@@ -126,7 +142,7 @@ contract CryptoFundraiser {
     }
 
     // Function to get a single campaign with status
-    function getCampaign(uint _campaignId) public view returns (Campaign memory) {
+    function getCampaign(uint32 _campaignId) public view returns (Campaign memory) {
         require(_campaignId < campaignCount, "Campaign does not exist");
         Campaign storage campaign = campaigns[_campaignId];
         Status currentStatus = getCampaignStatus(_campaignId);
@@ -146,16 +162,13 @@ contract CryptoFundraiser {
     }
 
     // Function to get user's donations
-    function getDonations(address _donor) public view returns (uint[] memory) {
-        uint[] memory donationArray = new uint[](campaignCount);
-        for(uint i = 0; i < campaignCount; i++) {
-            donationArray[i] = donations[_donor][i];
-        }
-        return donationArray;
+    function getDonations(uint32 _campaignId) public view returns (uint96) {
+        require(_campaignId < campaignCount, "Campaign does not exist");
+        return donations[msg.sender][_campaignId];
     }
 
     // Function to donate to a campaign
-    function donate(uint _campaignId, string memory _message) external payable {
+    function donate(uint32 _campaignId, string calldata message) external payable {
         require(_campaignId < campaignCount, "Campaign does not exist");
         Campaign storage campaign = campaigns[_campaignId];
 
@@ -164,10 +177,14 @@ contract CryptoFundraiser {
         require(msg.value > 0, "Donation must be greater than 0");
         require(getCampaignStatus(_campaignId) == Status.Active, "Campaign is not active");
 
-        campaign.balance += msg.value;
-        donations[msg.sender][_campaignId] += msg.value;
+        // Convert msg.value to uint96 and check for overflow
+        require(msg.value <= type(uint96).max, "Donation amount too large");
+        uint96 amount = uint96(msg.value);
 
-        emit DonationReceived(_campaignId, msg.sender, msg.value, _message);
+        campaign.balance += amount;
+        donations[msg.sender][_campaignId] += amount;
+
+        emit DonationReceived(_campaignId, msg.sender, amount, message);
 
         // Auto-complete the campaign if goal is reached and autoComplete is enabled
         if (campaign.autoComplete && campaign.balance >= campaign.goal) {
@@ -176,7 +193,7 @@ contract CryptoFundraiser {
     }
 
     // Function to check if a campaign can be completed
-    function canCompleteCampaign(uint _campaignId) public view returns (bool) {
+    function canCompleteCampaign(uint32 _campaignId) public view returns (bool) {
         require(_campaignId < campaignCount, "Campaign does not exist");
         Campaign storage campaign = campaigns[_campaignId];
         
@@ -203,7 +220,7 @@ contract CryptoFundraiser {
     }
 
     // Function to complete a campaign
-    function completeCampaign(uint _campaignId) external {
+    function completeCampaign(uint32 _campaignId) external {
         require(_campaignId < campaignCount, "Campaign does not exist");
         Campaign storage campaign = campaigns[_campaignId];
 
@@ -215,7 +232,7 @@ contract CryptoFundraiser {
     }
 
     // Internal function to complete a campaign
-    function _completeCampaign(uint _campaignId) internal {
+    function _completeCampaign(uint32 _campaignId) internal {
         Campaign storage campaign = campaigns[_campaignId];
         require(!campaign.completed, "Campaign is already completed");
 
@@ -223,7 +240,7 @@ contract CryptoFundraiser {
 
         if (campaign.balance >= campaign.goal) {
             campaign.status = Status.Completed;
-            campaign.owner.transfer(campaign.balance);
+            campaign.owner.transfer(uint256(campaign.balance));
             emit CampaignCompleted(_campaignId, true);
         } else {
             campaign.status = Status.Failed;
@@ -232,7 +249,7 @@ contract CryptoFundraiser {
     }
 
     // Function to check if funds can be withdrawn
-    function canWithdrawFunds(uint _campaignId) public view returns (bool) {
+    function canWithdrawFunds(uint32 _campaignId) public view returns (bool) {
         require(_campaignId < campaignCount, "Campaign does not exist");
         Campaign storage campaign = campaigns[_campaignId];
         
@@ -260,7 +277,7 @@ contract CryptoFundraiser {
     }
 
     // Function to withdraw funds from a completed campaign
-    function withdrawFunds(uint _campaignId) external {
+    function withdrawFunds(uint32 _campaignId) external {
         require(_campaignId < campaignCount, "Campaign does not exist");
         Campaign storage campaign = campaigns[_campaignId];
         
@@ -274,13 +291,13 @@ contract CryptoFundraiser {
         
         // Transfer funds to owner using transfer instead of call
         // This limits gas to 2300 and reverts on failure
-        payable(campaign.owner).transfer(amount);
+        payable(campaign.owner).transfer(uint96(amount));
 
-        emit FundsWithdrawn(_campaignId, campaign.owner, amount);
+        emit FundsWithdrawn(_campaignId, uint96(amount));
     }
 
-    // Function to refund donations
-    function refund(uint _campaignId) external {
+    // Function to refund donations 
+    function refund(uint32 _campaignId) external {
         require(_campaignId < campaignCount, "Campaign does not exist");
         Campaign storage campaign = campaigns[_campaignId];
 
@@ -289,11 +306,13 @@ contract CryptoFundraiser {
         require(!campaign.completed, "Campaign is already completed");
         require(getCampaignStatus(_campaignId) != Status.Completed, "Cannot refund completed campaign");
 
-        uint donation = donations[msg.sender][_campaignId];
+        uint96 donation = donations[msg.sender][_campaignId];
         require(donation > 0, "You have no donations to refund");
 
         donations[msg.sender][_campaignId] = 0;
         campaign.balance -= donation;
-        payable(msg.sender).transfer(donation);
+        
+        // Safe conversion since donation is uint96
+        payable(msg.sender).transfer(uint256(donation));
     }
 }

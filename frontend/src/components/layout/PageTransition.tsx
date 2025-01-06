@@ -1,17 +1,19 @@
-import React, { ReactNode } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
+import { theme } from '@/theme';
 
-interface Props {
-  children: ReactNode;
+interface PageTransitionProps {
+  children: React.ReactNode;
 }
 
-const PageTransition: React.FC<Props> = ({ children }) => {
+const PageTransition: React.FC<PageTransitionProps> = ({ children }) => {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 20 }}
-      transition={{ duration: 0.3, ease: 'easeOut' }}
+      exit={{ opacity: 0, y: -20 }}
+      transition={{ duration: 0.2 }}
+      style={{ backgroundColor: theme.colors.dark[900], color: theme.colors.dark[100] }}
     >
       {children}
     </motion.div>

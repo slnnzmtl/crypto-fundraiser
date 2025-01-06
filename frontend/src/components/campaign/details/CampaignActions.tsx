@@ -12,16 +12,23 @@ const CampaignActions: React.FC<ICampaignActions> = ({
   onDonate,
   onComplete
 }) => {
-  const { amount, setAmount, isValid, error } = useDonationForm();
-  const [message, setMessage] = useState('');
+  const {
+    amount,
+    message,
+    setAmount,
+    setMessage,
+    isValid,
+    amountError,
+    messageError,
+    reset
+  } = useDonationForm();
   const [isAmountFocused, setIsAmountFocused] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (isValid && !isSubmitting) {
       await onDonate(amount, message);
-      setAmount('');
-      setMessage('');
+      reset();
       setIsAmountFocused(false);
     }
   };
@@ -57,7 +64,7 @@ const CampaignActions: React.FC<ICampaignActions> = ({
         onFocus={() => setIsAmountFocused(true)}
         onBlur={() => setIsAmountFocused(false)}
         placeholder="Amount in ETH"
-        error={error}
+        error={amountError}
         disabled={isSubmitting}
         label="Donate"
         min="0"
@@ -79,7 +86,8 @@ const CampaignActions: React.FC<ICampaignActions> = ({
               placeholder="Leave a message (optional)"
               disabled={isSubmitting}
               label="Message"
-              maxLength={200}
+              error={messageError}
+              maxLength={500}
             />
           </motion.div>
         )}
@@ -91,7 +99,7 @@ const CampaignActions: React.FC<ICampaignActions> = ({
         isLoading={isSubmitting}
         className="w-full"
       >
-        Donate
+        Donate {amount ? `${amount} ETH` : ''}
       </Button>
     </form>
   );

@@ -36,20 +36,36 @@ const DEFAULT_ERRORS: Record<ErrorType, Omit<ErrorConfig, 'type'>> = {
       }
     }
   },
+  [ErrorType.NETWORK_ERROR]: {
+    title: 'Network Connection Error',
+    description: 'Unable to connect to the network. Please check your internet connection and try again.',
+    action: {
+      label: 'Try Again',
+      onClick: () => window.location.reload()
+    }
+  },
+  [ErrorType.CONTRACT_ERROR]: {
+    title: 'Smart Contract Error',
+    description: 'There was an error interacting with the smart contract. Please try again later.',
+    action: {
+      label: 'Try Again',
+      onClick: () => window.location.reload()
+    }
+  },
+  [ErrorType.PROVIDER_ERROR]: {
+    title: 'Provider Connection Error',
+    description: 'Unable to connect to the Ethereum network provider. Please check your wallet connection.',
+    action: {
+      label: 'Try Again',
+      onClick: () => window.location.reload()
+    }
+  },
   [ErrorType.INSUFFICIENT_FUNDS]: {
     title: 'Insufficient Funds',
     description: 'You don\'t have enough ETH in your wallet to complete this transaction. You need ETH for:\n1. The donation amount\n2. Gas fees',
     action: {
       label: 'Get Sepolia ETH',
       href: 'https://sepoliafaucet.com/'
-    }
-  },
-  [ErrorType.NOT_FOUND]: {
-    title: 'Page Not Found',
-    description: 'The page you are looking for does not exist.',
-    action: {
-      label: 'Go Home',
-      onClick: () => window.location.href = '/'
     }
   },
   [ErrorType.UNAUTHORIZED]: {
@@ -83,18 +99,38 @@ const DEFAULT_ERRORS: Record<ErrorType, Omit<ErrorConfig, 'type'>> = {
       label: 'Try Again',
       onClick: () => window.location.reload()
     }
+  },
+  [ErrorType.CREATE_CAMPAIGN_FAILED]: {
+    title: 'Failed to Create Campaign',
+    description: 'Unable to create the campaign. Please check your inputs and try again.',
+    action: {
+      label: 'Try Again',
+      onClick: () => window.location.reload()
+    }
+  },
+  [ErrorType.NOT_CONNECTED]: {
+    title: 'Wallet Not Connected',
+    description: 'Please connect your wallet to create a campaign.',
+    action: {
+      label: 'Connect Wallet',
+      onClick: () => window.location.reload()
+    }
   }
 };
 
 const ERROR_ICONS: Record<ErrorType, ReactNode> = {
   [ErrorType.METAMASK]: <MetaMaskLogo className="w-6 h-6" />,
   [ErrorType.NETWORK]: <div className="w-6 h-6 text-red-500">🌐</div>,
-  [ErrorType.NOT_FOUND]: <div className="w-6 h-6 text-yellow-500">🔍</div>,
+  [ErrorType.NETWORK_ERROR]: <div className="w-6 h-6 text-red-500">🌐</div>,
+  [ErrorType.CONTRACT_ERROR]: <div className="w-6 h-6 text-red-500">⚠️</div>,
+  [ErrorType.PROVIDER_ERROR]: <div className="w-6 h-6 text-red-500">🔌</div>,
   [ErrorType.UNAUTHORIZED]: <div className="w-6 h-6 text-red-500">🔒</div>,
   [ErrorType.USER_REJECTED]: <div className="w-6 h-6 text-yellow-500">❌</div>,
   [ErrorType.METAMASK_PENDING]: <MetaMaskLogo className="w-6 h-6" />,
   [ErrorType.INSUFFICIENT_FUNDS]: <div className="w-6 h-6 text-red-500">💰</div>,
-  [ErrorType.GET_CAMPAIGNS_FAILED]: <div className="w-6 h-6 text-red-500">⚠️</div>
+  [ErrorType.GET_CAMPAIGNS_FAILED]: <div className="w-6 h-6 text-red-500">⚠️</div>,
+  [ErrorType.CREATE_CAMPAIGN_FAILED]: <div className="w-6 h-6 text-red-500">⚠️</div>,
+  [ErrorType.NOT_CONNECTED]: <div className="w-6 h-6 text-red-500">🔌</div>
 };
 
 const ErrorNotification: React.FC<{ error: ErrorConfig; onClose: () => void }> = ({ error, onClose }) => {

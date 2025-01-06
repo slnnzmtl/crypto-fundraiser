@@ -6,11 +6,11 @@ import { CampaignInput } from '@/types/campaign';
 import { ErrorType } from '@error';
 
 const initialFormData: CampaignInput = {
-  title: '',
-  description: '',
-  goal: '',
+  title: 'New Campaign',
+  description: 'New Campaign Description',
+  goal: '1',
   durationInDays: 30,
-  image: '',
+  image: 'https://images.unsplash.com/photo-1709761942157-2014363b2d09?q=80&w=2942&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
   autoComplete: false,
 };
 
@@ -57,8 +57,12 @@ export const useCreateCampaignForm = (onSuccess: () => void) => {
       setIsSubmitting(true);
       try {
         const campaignId = await campaignStore.createCampaign(formData);
-        onSuccess();
-        navigate(`/campaigns/${campaignId}`);
+        if (typeof campaignId === 'number') {
+          onSuccess();
+          navigate(`/campaigns/${campaignId}`);
+        } else {
+          showError(ErrorType.NETWORK);
+        }
       } catch (error) {
         if (error instanceof Error) {
           const errorMap: Record<string, ErrorType> = {

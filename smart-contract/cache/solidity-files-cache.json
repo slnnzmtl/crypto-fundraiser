@@ -2,14 +2,15 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "/Users/danielraptom/Git/crypto-fundraiser/smart-contract/contracts/CryptoFundraiser.sol": {
-      "lastModificationDate": 1735899989410,
-      "contentHash": "2b445f14f8a054a2f51cdbd569d31041",
+      "lastModificationDate": 1736171065681,
+      "contentHash": "3127fd103ccaa5e317a57907880ae0b9",
       "sourceName": "contracts/CryptoFundraiser.sol",
       "solcConfig": {
         "version": "0.8.19",
         "settings": {
+          "viaIR": true,
           "optimizer": {
-            "enabled": false,
+            "enabled": true,
             "runs": 200
           },
           "outputSelection": {
@@ -34,41 +35,6 @@
       ],
       "artifacts": [
         "CryptoFundraiser"
-      ]
-    },
-    "/Users/danielraptom/Git/crypto-fundraiser/smart-contract/contracts/HelloWorld.sol": {
-      "lastModificationDate": 1734608816081,
-      "contentHash": "d09dc349e9c38292b702f79144c2cd14",
-      "sourceName": "contracts/HelloWorld.sol",
-      "solcConfig": {
-        "version": "0.8.19",
-        "settings": {
-          "optimizer": {
-            "enabled": false,
-            "runs": 200
-          },
-          "outputSelection": {
-            "*": {
-              "*": [
-                "abi",
-                "evm.bytecode",
-                "evm.deployedBytecode",
-                "evm.methodIdentifiers",
-                "metadata"
-              ],
-              "": [
-                "ast"
-              ]
-            }
-          }
-        }
-      },
-      "imports": [],
-      "versionPragmas": [
-        "^0.8.0"
-      ],
-      "artifacts": [
-        "HelloWorld"
       ]
     }
   }

@@ -1,132 +1,249 @@
 const hre = require("hardhat");
 const fs = require('fs');
 const path = require('path');
-const { exec } = require('child_process');
+const { exec, spawn } = require('child_process');
+const util = require('util');
+const execAsync = util.promisify(exec);
 
-// Function to kill existing frontend server
-function killFrontendServer() {
-  return new Promise((resolve, reject) => {
-    // On macOS/Linux
-    exec('lsof -ti:3000 | xargs kill -9', (error) => {
-      // Ignore error as it might mean no process was running
-      resolve();
-    });
-  });
-}
-
-async function exportState(oldContract) {
-  try {
-    // Export state if old contract exists
-    if (oldContract) {
-      console.log('Exporting state from old contract...');
-      await exec('node scripts/exportState.js');
-      console.log('State exported successfully');
+const FileSystem = {
+  ensureDirectoryExists(dirPath) {
+    if (!fs.existsSync(dirPath)) {
+      fs.mkdirSync(dirPath, { recursive: true });
     }
-  } catch (error) {
-    console.error('Failed to export state:', error);
-  }
-}
+  },
 
-async function importState(newContract) {
-  try {
-    // Check if we have a backup to import
-    const backupPath = path.join(__dirname, '../data/backup.json');
-    if (fs.existsSync(backupPath)) {
-      console.log('Importing state to new contract...');
-      await exec('node scripts/importState.js');
-      console.log('State imported successfully');
+  copyFile(source, target) {
+    if (!fs.existsSync(source)) {
+      throw new Error(`Source file not found: ${source}`);
     }
-  } catch (error) {
-    console.error('Failed to import state:', error);
+    this.ensureDirectoryExists(path.dirname(target));
+    fs.copyFileSync(source, target);
+    
+    if (!fs.existsSync(target)) {
+      throw new Error(`Failed to copy file to: ${target}`);
+    }
+  },
+
+  writeFile(filePath, content) {
+    this.ensureDirectoryExists(path.dirname(filePath));
+    fs.writeFileSync(filePath, content);
+    
+    if (!fs.existsSync(filePath)) {
+      throw new Error(`Failed to write file: ${filePath}`);
+    }
+  },
+
+  readJson(filePath) {
+    if (!fs.existsSync(filePath)) {
+      throw new Error(`File not found: ${filePath}`);
+    }
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
   }
-}
+};
+
+const FrontendManager = {
+  updateABI(contractName, abiPath) {
+    try {
+      const frontendAbiPath = path.join(__dirname, '../../frontend/src/abi', `${contractName}.json`);
+      FileSystem.copyFile(abiPath, frontendAbiPath);
+      
+      const abiContent = fs.readFileSync(frontendAbiPath, 'utf8');
+      if (!abiContent || abiContent.trim() === '') {
+        throw new Error('ABI file is empty');
+      }
+      
+      console.log(`ABI copied to ${frontendAbiPath}`);
+      return true;
+    } catch (error) {
+      console.error(`Failed to update ABI: ${error.message}`);
+      throw error;
+    }
+  },
+
+  updateEnv(address) {
+    try {
+      if (!address || !address.startsWith('0x')) {
+        throw new Error('Invalid contract address');
+      }
+
+      const envPath = path.join(__dirname, '../../frontend/.env');
+      const envContent = `REACT_APP_CONTRACT_ADDRESS=${address}\n`;
+      FileSystem.writeFile(envPath, envContent);
+      
+      const writtenContent = fs.readFileSync(envPath, 'utf8');
+      if (writtenContent.trim() !== envContent.trim()) {
+        throw new Error('ENV file content verification failed');
+      }
+      
+      console.log('Updated frontend .env with new contract address');
+      return true;
+    } catch (error) {
+      console.error(`Failed to update .env: ${error.message}`);
+      throw error;
+    }
+  },
+
+  async restart() {
+    try {
+      if (process.platform === 'win32') {
+        await execAsync('taskkill /F /IM node.exe').catch(() => {});
+      } else {
+        await execAsync('pkill -f "react-scripts start"').catch(() => {});
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      const frontendPath = path.join(__dirname, '../../frontend');
+      
+      if (!fs.existsSync(frontendPath)) {
+        throw new Error('Frontend directory not found');
+      }
+
+      const packageJsonPath = path.join(frontendPath, 'package.json');
+      if (!fs.existsSync(packageJsonPath)) {
+        throw new Error('package.json not found in frontend directory');
+      }
+
+      const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+      const child = spawn(npmCmd, ['start'], {
+        cwd: frontendPath,
+        detached: true,
+        stdio: 'ignore'
+      });
+      
+      child.unref();
+      
+      console.log('Frontend server started in background');
+    } catch (error) {
+      console.error('Error restarting frontend server:', error);
+      throw error;
+    }
+  }
+};
+
+const ContractDeployer = {
+  async deploy(contractName) {
+    console.log(`Getting ${contractName} factory...`);
+    const Factory = await hre.ethers.getContractFactory(contractName);
+
+    console.log(`Deploying ${contractName}...`);
+    const contract = await Factory.deploy();
+
+    console.log("Waiting for deployment to complete...");
+    await contract.waitForDeployment();
+    
+    return contract;
+  },
+
+  async waitForConfirmations(contract, confirmations) {
+    console.log(`Waiting for ${confirmations} block confirmations...`);
+    await contract.deploymentTransaction().wait(confirmations);
+  },
+
+  async importExamples(contract) {
+    try {
+      const backupPath = path.join(__dirname, '../data/backup.json');
+      const { campaigns, donations } = FileSystem.readJson(backupPath);
+
+      console.log(`Importing ${campaigns.length} example campaigns...`);
+
+      for (let i = 0; i < campaigns.length; i++) {
+        const campaign = campaigns[i];
+        const deadline = Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60);
+
+        const tx = await contract.createCampaign(
+          campaign.title,
+          campaign.description,
+          campaign.goal,
+          30,
+          campaign.image,
+          campaign.autoComplete
+        );
+        await tx.wait();
+
+        const campaignDonations = donations[i] || [];
+        console.log(`Importing ${campaignDonations.length} donations for campaign ${i + 1}`);
+
+        for (const donation of campaignDonations) {
+          const [signer] = await hre.ethers.getSigners();
+          await signer.sendTransaction({
+            to: donation.donor,
+            value: donation.amount
+          });
+
+          await hre.network.provider.request({
+            method: "hardhat_impersonateAccount",
+            params: [donation.donor],
+          });
+
+          const donorSigner = await hre.ethers.getSigner(donation.donor);
+          const contractWithDonor = contract.connect(donorSigner);
+
+          const donateTx = await contractWithDonor.donate(
+            i,
+            donation.message || "",
+            { value: donation.amount }
+          );
+          await donateTx.wait();
+
+          await hre.network.provider.request({
+            method: "hardhat_stopImpersonatingAccount",
+            params: [donation.donor],
+          });
+        }
+
+        if (campaign.status !== "0") {
+          await hre.network.provider.request({
+            method: "evm_increaseTime",
+            params: [30 * 24 * 60 * 60]
+          });
+          await hre.network.provider.request({
+            method: "evm_mine"
+          });
+
+          const completeTx = await contract.completeCampaign(i);
+          await completeTx.wait();
+        }
+
+        console.log(`Campaign ${i + 1} imported successfully`);
+      }
+
+      console.log('Example data imported successfully');
+    } catch (error) {
+      console.error('Failed to import example data:', error);
+      throw error;
+    }
+  }
+};
 
 async function main() {
   try {
-    // Get the old contract address if it exists
-    const envPath = path.join(__dirname, '../../frontend/.env');
-    let oldContractAddress;
-    if (fs.existsSync(envPath)) {
-      const envContent = fs.readFileSync(envPath, 'utf8');
-      const match = envContent.match(/REACT_APP_CONTRACT_ADDRESS=(.*)/);
-      if (match) {
-        oldContractAddress = match[1];
-      }
+    const isLocalhost = hre.network.name === 'localhost';
+    const contractName = "CryptoFundraiser";
+
+    const contract = await ContractDeployer.deploy(contractName);
+    const address = await contract.getAddress();
+    console.log(`${contractName} deployed to:`, address);
+
+    if (!isLocalhost) {
+      await ContractDeployer.waitForConfirmations(contract, 10);
     }
 
-    // Export state from old contract if it exists
-    if (oldContractAddress) {
-      const CryptoFundraiser = await hre.ethers.getContractFactory("CryptoFundraiser");
-      const oldContract = await CryptoFundraiser.attach(oldContractAddress);
-      await exportState(oldContract);
-    }
-
-    // Get the contract factory
-    console.log("Getting contract factory...");
-    const CryptoFundraiser = await hre.ethers.getContractFactory("CryptoFundraiser");
-    console.log("Contract factory bytecode hash:", hre.ethers.keccak256(CryptoFundraiser.bytecode));
-
-    // Deploy the contract
-    console.log("Deploying CryptoFundraiser...");
-    const cryptoFundraiser = await CryptoFundraiser.deploy();
-
-    // Wait for deployment to complete
-    console.log("Waiting for deployment to complete...");
-    await cryptoFundraiser.waitForDeployment();
-    const address = await cryptoFundraiser.getAddress();
-    console.log("CryptoFundraiser deployed to:", address);
-
-    // Wait for more block confirmations to ensure deployment is stable
-    console.log("Waiting for block confirmations...");
-    const deploymentReceipt = await cryptoFundraiser.deploymentTransaction().wait(10);
-    console.log("Deployment confirmed in block:", deploymentReceipt.blockNumber);
-
-    // Copy ABI to frontend
-    const abiPath = path.join(__dirname, '../artifacts/contracts/CryptoFundraiser.sol/CryptoFundraiser.json');
-    const frontendAbiPath = path.join(__dirname, '../../frontend/src/abi/CryptoFundraiser.json');
-
-    // Create directory if it doesn't exist
-    const abiDir = path.dirname(frontendAbiPath);
-    if (!fs.existsSync(abiDir)) {
-      fs.mkdirSync(abiDir, { recursive: true });
-    }
+    const abiPath = path.join(__dirname, `../artifacts/contracts/${contractName}.sol/${contractName}.json`);
     
-    // Copy ABI file
-    fs.copyFileSync(abiPath, frontendAbiPath);
-    console.log(`ABI copied to ${frontendAbiPath}`);
+    try {
+      await FrontendManager.updateABI(contractName, abiPath);
+      await FrontendManager.updateEnv(address);
+      console.log('Frontend files updated successfully');
+    } catch (error) {
+      console.error('Failed to update frontend files:', error);
+      process.exit(1);
+    }
 
-    // Update .env file in frontend directory
-    const envContent = `REACT_APP_CONTRACT_ADDRESS=${address}\n`;
-    fs.writeFileSync(envPath, envContent);
-    console.log('Updated frontend .env with new contract address');
-
-    // Import state to new contract
-    await importState(cryptoFundraiser);
-
-    // Kill existing frontend server and start a new one
-    console.log('Restarting frontend server...');
-    await killFrontendServer();
-    
-    exec('cd ../../frontend && npm start', (error, stdout, stderr) => {
-      if (error) {
-        console.error('Error restarting frontend server:', error);
-        return;
-      }
-      console.log('Frontend server restarted');
-      
-      // Log stdout and stderr
-      if (stdout) console.log(stdout);
-      if (stderr) console.error(stderr);
-    });
-
+    // console.log('Restarting frontend server...');
+    // await FrontendManager.restart();
   } catch (error) {
     console.error("\nDeployment failed with error:", error);
-    if (error.data) {
-      console.error("Error data:", error.data);
-    }
-    if (error.transaction) {
-      console.error("Error transaction:", error.transaction);
-    }
     process.exitCode = 1;
   }
 }
