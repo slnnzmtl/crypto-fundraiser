@@ -6,6 +6,7 @@ import { HeroSection } from '@/components/welcome/HeroSection';
 import { AboutSection } from '@/components/welcome/AboutSection';
 import { FooterSection } from '@/components/welcome/FooterSection';
 import { observer } from 'mobx-react-lite';
+import { theme } from '@/theme';
 
 const WelcomeScreen: React.FC = observer(() => {
   const [isConnecting, setIsConnecting] = useState(false);
@@ -16,7 +17,7 @@ const WelcomeScreen: React.FC = observer(() => {
 
   const particlesOptions = useMemo(() => ({
     fullScreen: { enable: false, zIndex: 0 },
-    background: { color: { value: '#0d47a1' } },
+    background: { color: { value: theme.colors.dark[1000] } },
     fpsLimit: 60,
     interactivity: {
       events: {
@@ -30,8 +31,14 @@ const WelcomeScreen: React.FC = observer(() => {
       },
     },
     particles: {
-      color: { value: '#ffffff' },
-      links: { color: '#ffffff', distance: 150, enable: true, opacity: 0.5, width: 1 },
+      color: { value: theme.colors.dark[100] },
+      links: { 
+        color: theme.colors.yellow[500], 
+        distance: 150, 
+        enable: true, 
+        opacity: 0.5, 
+        width: 1 
+      },
       collisions: { enable: true },
       move: {
         direction: 'none' as MoveDirection,
@@ -68,7 +75,13 @@ const WelcomeScreen: React.FC = observer(() => {
   }, [isConnecting]);
 
   return (
-    <div className="fixed inset-0 overflow-auto bg-gradient-to-b from-gray-900 to-black">
+    <div 
+      className="fixed inset-0 overflow-auto"
+      style={{ 
+        background: `linear-gradient(to bottom, ${theme.colors.dark[1000]} 50%, ${theme.colors.dark[900]})`,
+        color: theme.colors.dark[100]
+      }}
+    >
       <main className="relative min-h-screen">
         <div className="relative z-10">
           <HeroSection 
