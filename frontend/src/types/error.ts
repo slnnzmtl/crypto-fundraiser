@@ -11,7 +11,8 @@ export enum ErrorType {
   PROVIDER_ERROR = 'Provider connection error',
   UNAUTHORIZED = 'Unauthorized action',
   NOT_CONNECTED = 'Not connected to wallet',
-  WALLET_ERROR = 'Wallet connection error'
+  WALLET_ERROR = 'Wallet connection error',
+  UNKNOWN_ERROR = 'An unknown error occurred'
 }
 
 export interface ErrorAction {

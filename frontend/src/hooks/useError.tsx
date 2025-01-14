@@ -123,6 +123,14 @@ const DEFAULT_ERRORS: Record<ErrorType, Omit<ErrorConfig, 'type'>> = {
       label: 'Try Again',
       onClick: () => window.location.reload()
     }
+  },
+  [ErrorType.UNKNOWN_ERROR]: {
+    title: 'An unknown error occurred',
+    description: 'Please try again',
+    action: {
+      label: 'Retry',
+      onClick: () => window.location.reload()
+    }
   }
 };
 
@@ -139,7 +147,8 @@ const ERROR_ICONS: Record<ErrorType, ReactNode> = {
   [ErrorType.GET_CAMPAIGNS_FAILED]: <div className="w-6 h-6 text-red-500">⚠️</div>,
   [ErrorType.CREATE_CAMPAIGN_FAILED]: <div className="w-6 h-6 text-red-500">⚠️</div>,
   [ErrorType.NOT_CONNECTED]: <div className="w-6 h-6 text-red-500">🔌</div>,
-  [ErrorType.WALLET_ERROR]: <div className="w-6 h-6 text-red-500">🔌</div>
+  [ErrorType.WALLET_ERROR]: <div className="w-6 h-6 text-red-500">🔌</div>,
+  [ErrorType.UNKNOWN_ERROR]: <div className="w-6 h-6 text-red-500">⚠️</div>
 };
 
 const ErrorNotification: React.FC<{ error: ErrorConfig; onClose: () => void }> = ({ error, onClose }) => {
