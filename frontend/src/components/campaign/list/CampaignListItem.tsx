@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ViewType } from '@interfaces';
 import { ImagePlaceholder } from '@components/ui';
 import { Campaign } from '@/types/campaign';
+import Glass from '@/components/ui/Glass';
 
 interface Props {
   campaign: Campaign;
@@ -35,15 +36,15 @@ const CampaignListItem: React.FC<Props> = ({ campaign, viewType }) => {
   return (
     <Link
       to={`/campaigns/${campaign.id}`}
-      className={`
-        block bg-dark-800 rounded-lg overflow-hidden hover:bg-dark-700 transition-colors
-        ${viewType === 'list' ? 'flex gap-6' : ''}
-      `}
     >
-      <div className={viewType === 'list' ? 'w-48 shrink-0' : 'aspect-video'}>
-        {!imageError && campaign.image ? (
-          <img
-            src={campaign.image}
+      <Glass  className={`
+        block bg-dark-800 rounded-lg overflow-hidden hover:bg-dark-700 transition-colors
+        ${viewType === 'list' ? 'flex gap-0 md:gap-6' : ''}
+      `}>
+        <div className={viewType === 'list' ? 'min-w-[30%] w-48 shrink-1' : 'aspect-video'}>
+          {!imageError && campaign.image ? (
+            <img
+              src={campaign.image}
             alt={campaign.title}
             className="w-full h-full object-cover"
             onError={() => setImageError(true)}
@@ -55,19 +56,19 @@ const CampaignListItem: React.FC<Props> = ({ campaign, viewType }) => {
 
       <div className="p-4 flex-1">
         <div className="flex justify-between items-start gap-4">
-          <h3 className="text-lg font-medium leading-tight">{campaign.title}</h3>
-          <div className="text-sm shrink-0">
-            <span className={`px-2 py-1 rounded ${getStatusColor()}`}>
+          <h3 className="text-base md:text-lg font-medium leading-tight">{campaign.title}</h3>
+          <div className="text-xs md:text-sm shrink-0">
+            <span className={`px-2 py-1 text-xs md:text-sm rounded ${getStatusColor()}`}>
               {getStatusText()}
             </span>
           </div>
         </div>
 
-        <p className="mt-2 text-sm text-gray-400 line-clamp-2">
+        <p className="mt-2 text-xs md:text-sm text-gray-400 line-clamp-2">
           {campaign.description}
         </p>
 
-        <div className="mt-4 flex justify-between text-sm">
+        <div className="mt-4 flex flex-col md:flex-row justify-between text-xs md:text-sm">
           <div>
             <span className="text-gray-400">Goal: </span>
             <span>{Number(campaign.goal)} ETH</span>
@@ -77,7 +78,8 @@ const CampaignListItem: React.FC<Props> = ({ campaign, viewType }) => {
             <span>{Number(campaign.pledged)} ETH</span>
           </div>
         </div>
-      </div>
+        </div>
+      </Glass>
     </Link>
   );
 };
