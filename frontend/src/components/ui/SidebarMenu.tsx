@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useCallback } from 'react';
 import { observer } from 'mobx-react-lite';
-import { ConnectWallet, Button } from '@components/index';
-import { walletStore } from '@stores/index';
+import { Button } from '@components/index';
+import { campaignStore, walletStore } from '@stores/index';
+import { Link } from 'react-router-dom';
 
 interface SidebarMenuProps {
   isOpen: boolean;
@@ -10,25 +11,37 @@ interface SidebarMenuProps {
 }
 
 interface MenuItemProps {
-  onClick: () => void;
+  onClick?: () => void;
   children: React.ReactNode;
   className?: string;
 }
 
-const MenuItem: React.FC<MenuItemProps> = ({ children, className = '' }) => (
+const MenuItem: React.FC<MenuItemProps> = ({ children, className = '', onClick }) => (
   <div 
     className={`w-full ${className}`}
   >
-    {children}
+    <Button variant="flat" className={`w-full sm:w-auto ${className}`} onClick={onClick}>
+      {children}
+    </Button>
   </div>
 );
 
 export const SidebarMenu: React.FC<SidebarMenuProps> = observer(({ isOpen, onCreateCampaign, onClose }) => {
   const menuRef = useRef<HTMLDivElement>(null);
-  const handleLogout = useCallback(async () => {
+  
+  const handleLogout = async () => {
     await walletStore.disconnect();
     onClose();
-  }, [onClose]);
+  };
+
+  const handleConnect = async () => {
+    try {
+      await walletStore.connect();
+      await campaignStore.loadCampaigns();
+    } catch (error) {
+      console.error('Failed to connect wallet:', error);
+    }
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -43,7 +56,6 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = observer(({ isOpen, onCre
 
   return (
     <>
-      {/* Overlay */}
       <div 
         className={`
           fixed inset-0 bg-black/50 transition-opacity duration-300
@@ -51,7 +63,6 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = observer(({ isOpen, onCre
         `}
       />
 
-      {/* Menu */}
       <div 
         ref={menuRef}
         className={`
@@ -65,14 +76,16 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = observer(({ isOpen, onCre
           <MenuItem onClick={onCreateCampaign} className="sm:hidden">
             Create Campaign
           </MenuItem>
-          <MenuItem onClick={() => {}}>
-            <ConnectWallet />
-          </MenuItem>
+
+          {!walletStore.address && (
+            <MenuItem onClick={handleConnect}>
+              Connect Wallet
+            </MenuItem>
+          )}
+
           {walletStore.address && (
             <MenuItem onClick={handleLogout} className="text-red-500">
-              <Button variant="flat" className="w-full sm:w-auto text-red-500" onClick={handleLogout}>
-                Logout
-              </Button>
+              Logout
             </MenuItem>
           )}
         </div>
