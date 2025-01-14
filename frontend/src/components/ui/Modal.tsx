@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { cn } from '@/lib/utils';
+import Glass from './Glass';
 
 interface Props {
   isOpen: boolean;
@@ -37,26 +39,34 @@ const Modal: React.FC<Props> = ({ isOpen, onClose, title, children }) => {
 
   return (
     <div 
-      className={`fixed inset-0 transition-opacity duration-300 ${
+      className={cn(
+        'fixed inset-0 transition-opacity duration-300',
+        'backdrop-blur-md bg-black/40',
         isAnimating ? 'opacity-100' : 'opacity-0'
-      }`}
-      style={{ backgroundColor: 'rgba(0, 0, 0, 0.9)' }}
+      )}
       onClick={handleBackdropClick}
     >
       <div 
         ref={modalRef}
-        className={`fixed bottom-0 sm:bottom-auto sm:absolute sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 w-full h-[80vh] sm:h-auto sm:max-w-lg transition-all duration-300 ease-out ${
+        className={cn(
+          'fixed bottom-0 sm:bottom-auto sm:absolute sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2',
+          'w-full h-[80vh] sm:h-auto sm:max-w-lg',
+          'transition-all duration-300 ease-out',
           isAnimating 
             ? 'translate-y-0 opacity-100' 
             : 'translate-y-[100%] sm:translate-y-[60%] opacity-0'
-        }`}
+        )}
       >
-        <div className="bg-dark-800/80 rounded-t-xl sm:rounded-xl overflow-hidden h-full">
+        <Glass intensity="medium" className="h-full overflow-hidden">
           <div className="relative p-8 h-full">
             <div className="relative flex items-center mb-8">
               <button
                 onClick={onClose}
-                className="absolute left-0 text-gray-400 hover:text-white transition-colors duration-200"
+                className={cn(
+                  'absolute left-0',
+                  'text-gray-400 hover:text-white',
+                  'transition-colors duration-200'
+                )}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -73,11 +83,15 @@ const Modal: React.FC<Props> = ({ isOpen, onClose, title, children }) => {
                   />
                 </svg>
               </button>
-              <h2 className="text-xl font-medium w-full text-center">{title}</h2>
+              <h2 className="text-xl font-medium w-full text-center text-white/90">
+                {title}
+              </h2>
             </div>
-            {children}
+            <div className="text-white/80">
+              {children}
+            </div>
           </div>
-        </div>
+        </Glass>
       </div>
     </div>
   );
