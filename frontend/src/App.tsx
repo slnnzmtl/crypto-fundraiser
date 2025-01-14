@@ -19,7 +19,7 @@ function App() {
   return (
     <ErrorProvider>
       <ModalProvider>
-        <div className="min-h-screen bg-dark-900 text-white">
+        <div className="min-h-screen text-white">
           {isAuthenticated && <NavigationMenu />}
           <main className="container mx-auto px-4">
             <Router />
