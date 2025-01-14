@@ -65,7 +65,7 @@ const DesktopLayout: React.FC<CampaignDetailsLayoutProps> = ({
   onDonate,
   onComplete
 }) => (
-  <div className="hidden md:grid gap-6 md:grid-cols-[2fr,1fr]">
+  <div className="hidden md:grid gap-6 md:grid-cols-[2fr,1fr] py-4">
     <div className="space-y-6">
       <CampaignHeader campaign={campaign} />
       <CampaignProgress campaign={campaign} progress={progress} />
