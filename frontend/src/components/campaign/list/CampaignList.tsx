@@ -52,7 +52,7 @@ const CampaignList: React.FC = observer(() => {
   }
 
   return (
-    <div className="mt-8 flex flex-col gap-6" style={{ backgroundColor: theme.colors.dark[900] }}>
+    <div className="mt-8 flex flex-col gap-6">
       <div className="flex justify-end">
         <ViewToggle />
       </div>
