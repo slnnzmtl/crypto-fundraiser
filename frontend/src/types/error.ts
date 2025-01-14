@@ -10,7 +10,8 @@ export enum ErrorType {
   CONTRACT_ERROR = 'Smart contract error',
   PROVIDER_ERROR = 'Provider connection error',
   UNAUTHORIZED = 'Unauthorized action',
-  NOT_CONNECTED = 'Not connected to wallet'
+  NOT_CONNECTED = 'Not connected to wallet',
+  WALLET_ERROR = 'Wallet connection error'
 }
 
 export interface ErrorAction {
