@@ -11,7 +11,7 @@ interface Props {
 const Layout: React.FC<Props> = ({ children }) => {
   return (
     <ModalProvider>
-      <div className="min-h-screen bg-dark-900 text-white">
+      <div className="min-h-screen text-white">
         <NavigationMenu />
         
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
