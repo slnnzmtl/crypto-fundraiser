@@ -13,7 +13,6 @@ const PageTransition: React.FC<PageTransitionProps> = ({ children }) => {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.2 }}
-      style={{ backgroundColor: theme.colors.dark[900], color: theme.colors.dark[100] }}
     >
       {children}
     </motion.div>
