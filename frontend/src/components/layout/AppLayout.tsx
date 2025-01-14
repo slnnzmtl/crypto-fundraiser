@@ -12,12 +12,10 @@ export const AppLayout: React.FC<AppLayoutProps> = observer(({ children }) => {
   return (
     <div 
       className="min-h-screen" 
-      style={{ backgroundColor: theme.colors.dark[900] }}
     >
       {walletStore.address && <NavigationMenu />}
       <main 
         className={`${walletStore.address ? 'pt-20 sm:pt-24' : ''}`}
-        style={{ color: theme.colors.dark[100] }}
       >
         {children}
       </main>
