@@ -26,7 +26,7 @@ export const DonationList: React.FC<DonationListProps> = ({ donations, className
   return (
     <Card className={`space-y-4 ${className}`}>
       <h2 className="text-xl font-bold">Recent Donations</h2>
-      <div className="space-y-2">
+      <div className="space-y-2 overflow-y-auto">
         {donations.map((donation, index) => (
           <DonationListItem key={index} donation={donation} />
         ))}
