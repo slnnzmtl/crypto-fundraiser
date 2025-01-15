@@ -18,7 +18,7 @@ const Input = React.forwardRef<HTMLInputElement, Props>(
         <Glass
           intensity={intensity}
           className={cn(
-            "relative rounded-lg overflow-hidden bg-dark-900/50 dark:bg-dark-900/60",
+            "relative rounded-lg overflow-hidden",
             error
               ? "border-red-500"
               : isFocused

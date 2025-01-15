@@ -39,8 +39,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       primary: cn(
         "text-white",
         disabled || isLoading
-          ? "bg-blue-500/75 cursor-not-allowed"
-          : "bg-primary hover:bg-blue-700 active:bg-blue-800",
+          ? "bg-yellow-500/75 cursor-not-allowed"
+          : "bg-primary hover:bg-yellow-700 active:bg-yellow-800",
       ),
       secondary: cn(
         "text-white",

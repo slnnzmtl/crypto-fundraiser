@@ -21,7 +21,7 @@ const Glass: React.FC<GlassProps> = ({
   return (
     <div
       className={cn(
-        "bg-primary/5 dark:bg-primary/5",
+        "bg-dark-900/50 dark:bg-dark-900/60",
         glassStyles[intensity],
         "border border-white/20 dark:border-white/10",
         "shadow-[0_8px_32px_0_rgba(31,38,135,0.07)]",
