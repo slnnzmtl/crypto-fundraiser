@@ -36,7 +36,7 @@ const FilterPanel: React.FC = observer(() => {
                 onChange={(e) =>
                   campaignStore.setShowOnlyOwned(e.target.checked)
                 }
-                className="w-4 h-4 rounded border-gray-600 bg-dark-800 text-blue-600 focus:ring-blue-600"
+                className="w-4 h-4 rounded border-gray-600 bg-dark-800 text-yellow-600 focus:ring-yellow-600"
               />
               <span className="text-sm text-gray-300">
                 Show only my campaigns
@@ -72,12 +72,12 @@ const FilterPanel: React.FC = observer(() => {
           >
             <span>Active filters:</span>
             {statusFilter !== "all" && (
-              <span className="px-2 py-1 rounded-md bg-dark-700 text-blue-400">
+              <span className="px-2 py-1 rounded-md bg-dark-700 text-yellow-400">
                 {statuses.find((s) => s.value === statusFilter)?.label}
               </span>
             )}
             {campaignStore.showOnlyOwned && (
-              <span className="px-2 py-1 rounded-md bg-dark-700 text-blue-400">
+              <span className="px-2 py-1 rounded-md bg-dark-700 text-yellow-400">
                 My Campaigns
               </span>
             )}

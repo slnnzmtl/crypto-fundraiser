@@ -34,7 +34,7 @@ export const DonationListItem: React.FC<DonationListItemProps> = ({
   };
 
   return (
-    <Card className="flex flex-col space-y-2 bg-dark-900/50 dark:bg-dark-900/50">
+    <Card className="flex flex-col space-y-2 ">
       <div className="flex flex-wrap md:flex-nowrap justify-between gap-2 items-start mb-2">
         <div className="flex items-center flex-wrap space-x-2 w-full">
           <p className="text-sm text-gray-400">From</p>

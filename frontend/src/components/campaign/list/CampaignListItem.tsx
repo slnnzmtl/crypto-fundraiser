@@ -18,7 +18,7 @@ const CampaignListItem: React.FC<Props> = ({ campaign, viewType }) => {
     }
     return campaign.status === "failed"
       ? "bg-red-600/20 text-red-500"
-      : "bg-primary/20 text-blue-500";
+      : "bg-primary/20 text-yellow-500";
   };
 
   const getStatusText = () => {
