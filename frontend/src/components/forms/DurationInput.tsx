@@ -1,6 +1,6 @@
-import React from 'react';
-import { Input } from '../ui/primitives';
-import { pluralize } from '@utils/format';
+import React from "react";
+import { Input, Glass } from "../ui/primitives";
+import { pluralize } from "@utils/format";
 
 const DurationInput: React.FC<{
   value: number;
@@ -17,10 +17,10 @@ const DurationInput: React.FC<{
       label="Duration"
       required
     />
-    <div className="bg-dark-700 rounded-lg px-4 flex items-center text-gray-400">
-      {pluralize(Number(value), 'day')}
-    </div>
+    <Glass className="bg-dark-900/60 dark:bg-dark-900/80 rounded-lg px-4 flex items-center text-gray-400">
+      {pluralize(Number(value), "day")}
+    </Glass>
   </div>
 );
 
-export default DurationInput; 
+export default DurationInput;

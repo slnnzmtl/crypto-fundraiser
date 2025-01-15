@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ICampaignActions } from '../../../pages/interfaces';
-import { Button, Input, TextArea } from '@components/ui';
-import { useDonationForm } from '@hooks/useDonationForm';
+import React, { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ICampaignActions } from "../../../pages/interfaces";
+import { Button, Input, TextArea } from "@components/ui";
+import { useDonationForm } from "@hooks/useDonationForm";
 
 const CampaignActions: React.FC<ICampaignActions> = ({
   campaign,
@@ -10,7 +10,7 @@ const CampaignActions: React.FC<ICampaignActions> = ({
   canDonate,
   isSubmitting,
   onDonate,
-  onComplete
+  onComplete,
 }) => {
   const {
     amount,
@@ -20,7 +20,7 @@ const CampaignActions: React.FC<ICampaignActions> = ({
     isValid,
     amountError,
     messageError,
-    reset
+    reset,
   } = useDonationForm();
   const [isAmountFocused, setIsAmountFocused] = useState(false);
 
@@ -38,7 +38,7 @@ const CampaignActions: React.FC<ICampaignActions> = ({
       <div className="space-y-4">
         <Button
           variant="secondary"
-          disabled={campaign.status !== 'active' || isSubmitting}
+          disabled={campaign.status !== "active" || isSubmitting}
           onClick={onComplete}
           isLoading={isSubmitting}
           className="w-full"
@@ -49,18 +49,20 @@ const CampaignActions: React.FC<ICampaignActions> = ({
     );
   }
 
-  if (!canDonate || campaign.status !== 'active') {
+  if (!canDonate || campaign.status !== "active") {
     return null;
   }
 
-  const showMessageField = isAmountFocused || amount !== '';
+  const showMessageField = isAmountFocused || amount !== "";
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <Input
         type="number"
         value={amount}
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAmount(e.target.value)}
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+          setAmount(e.target.value)
+        }
         onFocus={() => setIsAmountFocused(true)}
         onBlur={() => setIsAmountFocused(false)}
         placeholder="Amount in ETH"
@@ -76,13 +78,15 @@ const CampaignActions: React.FC<ICampaignActions> = ({
         {showMessageField && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
+            animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.2 }}
           >
             <TextArea
               value={message}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setMessage(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                setMessage(e.target.value)
+              }
               placeholder="Leave a message (optional)"
               disabled={isSubmitting}
               label="Message"
@@ -99,10 +103,10 @@ const CampaignActions: React.FC<ICampaignActions> = ({
         isLoading={isSubmitting}
         className="w-full"
       >
-        Donate {amount ? `${amount} ETH` : ''}
+        Donate {amount ? `${amount} ETH` : ""}
       </Button>
     </form>
   );
 };
 
-export default CampaignActions; 
+export default CampaignActions;

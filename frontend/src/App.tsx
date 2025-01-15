@@ -1,13 +1,13 @@
-import React from 'react';
-import { useLocation } from 'react-router-dom';
-import { AnimatePresence } from 'framer-motion';
-import { ErrorProvider } from './hooks/useError';
-import { ModalProvider } from './hooks/useModal';
-import { useWalletEvents } from './hooks/useWalletEvents';
-import NavigationMenu from './components/ui/NavigationMenu';
-import Modals from './components/modals';
-import './styles/globals.css';
-import Router from './Router';
+import React from "react";
+import { useLocation } from "react-router-dom";
+import { AnimatePresence } from "framer-motion";
+import { ErrorProvider } from "./hooks/useError";
+import { ModalProvider } from "./hooks/useModal";
+import { useWalletEvents } from "./hooks/useWalletEvents";
+import NavigationMenu from "./components/ui/NavigationMenu";
+import Modals from "./components/modals";
+import "./styles/globals.css";
+import Router from "./Router";
 
 function App() {
   const location = useLocation();

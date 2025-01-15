@@ -1,9 +1,9 @@
-import { useCallback } from 'react';
-import { campaignStore } from '@stores/CampaignStore';
-import { useModal } from '@hooks/useModal';
-import { useError } from '@hooks/useError';
-import { ErrorType } from '@error';
-import { walletStore } from '@/stores';
+import { useCallback } from "react";
+import { campaignStore } from "@stores/CampaignStore";
+import { useModal } from "@hooks/useModal";
+import { useError } from "@hooks/useError";
+import { ErrorType } from "@error";
+import { walletStore } from "@/stores";
 
 export const useCampaignList = () => {
   const modal = useModal();
@@ -21,7 +21,7 @@ export const useCampaignList = () => {
         return;
       }
     }
-    modal.openModal('createCampaign');
+    modal.openModal("createCampaign");
   }, [modal, showError]);
 
   return {
@@ -29,6 +29,6 @@ export const useCampaignList = () => {
     viewType: campaignStore.viewType,
     showOnlyOwned: campaignStore.showOnlyOwned,
     isLoading: campaignStore.loading || campaignStore.initialLoading,
-    handleCreateClick
+    handleCreateClick,
   };
-}; 
+};
