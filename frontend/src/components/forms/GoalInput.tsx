@@ -1,5 +1,5 @@
-import React from 'react';
-import { Input } from '../ui/primitives';
+import React from "react";
+import { Input, Glass } from "../ui/primitives";
 
 const GoalInput: React.FC<{
   value: string;
@@ -16,8 +16,10 @@ const GoalInput: React.FC<{
       label="Goal Amount"
       required
     />
-    <div className="bg-dark-700 rounded-lg px-4 flex items-center text-gray-400">ETH</div>
+    <Glass className="bg-dark-900/60 dark:bg-dark-900/80 rounded-lg px-4 flex items-center text-gray-400">
+      ETH
+    </Glass>
   </div>
 );
 
-export default GoalInput; 
+export default GoalInput;
