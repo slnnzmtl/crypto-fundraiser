@@ -32,13 +32,13 @@ const NavigationMenu: React.FC = observer(() => {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-40 bg-dark-800/50 dark:bg-dark-900/90">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-screen-2xl mx-auto px-4 sm:px-6">
         {/* Main Navigation */}
         <div className="flex h-16 sm:h-20 items-center justify-between">
           <div className="flex items-center gap-4">
             <Button
               variant="flat"
-              className="text-lg sm:text-xl font-bold text-white"
+              className="px-0 text-lg sm:text-xl font-bold text-white"
               onClick={handleGoHome}
             >
               CryptoFundraiser

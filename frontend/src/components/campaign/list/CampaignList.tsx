@@ -43,10 +43,37 @@ const itemVariants = {
   },
 };
 
+const filterVariants = {
+  open: {
+    width: "20rem",
+    opacity: 1,
+    transition: {
+      width: {
+        duration: 0.3,
+      },
+      opacity: {
+        duration: 0.2,
+        delay: 0.1,
+      },
+    },
+  },
+  closed: {
+    width: 0,
+    opacity: 0,
+    transition: {
+      width: {
+        duration: 0.3,
+      },
+      opacity: {
+        duration: 0.2,
+      },
+    },
+  },
+};
+
 const CampaignList: React.FC = observer(() => {
   const { campaigns, isLoading, viewType, handleCreateClick } =
     useCampaignList();
-
   const [isFilterOpen, setIsFilterOpen] = useState(true);
 
   const renderContent = useCallback(() => {
@@ -127,19 +154,14 @@ const CampaignList: React.FC = observer(() => {
       )}
 
       <div className="flex flex-col md:flex-row gap-6">
-        <AnimatePresence>
-          {isFilterOpen && !isLoading && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.2 }}
-              className="w-full md:w-max"
-            >
-              <FilterPanel />
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <motion.div
+          variants={filterVariants}
+          initial="closed"
+          animate={isFilterOpen ? "open" : "closed"}
+          className="overflow-hidden flex-shrink-0"
+        >
+          <div className="w-80">{!isLoading && <FilterPanel />}</div>
+        </motion.div>
 
         <div className="flex-1 min-w-0">{renderContent()}</div>
       </div>

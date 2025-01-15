@@ -1,8 +1,8 @@
-import React from 'react';
-import { observer } from 'mobx-react-lite';
-import { NavigationMenu } from '@components/ui';
-import { ModalProvider } from '@hooks/useModal';
-import Modals from '@components/modals';
+import React from "react";
+import { observer } from "mobx-react-lite";
+import { NavigationMenu } from "@components/ui";
+import { ModalProvider } from "@hooks/useModal";
+import Modals from "@components/modals";
 
 interface Props {
   children: React.ReactNode;
@@ -13,8 +13,8 @@ const Layout: React.FC<Props> = ({ children }) => {
     <ModalProvider>
       <div className="min-h-screen text-white">
         <NavigationMenu />
-        
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <main className="max-w-screen-2xl mx-auto px-4 sm:px-6 py-8">
           {children}
         </main>
 
@@ -24,4 +24,4 @@ const Layout: React.FC<Props> = ({ children }) => {
   );
 };
 
-export default observer(Layout); 
+export default observer(Layout);
