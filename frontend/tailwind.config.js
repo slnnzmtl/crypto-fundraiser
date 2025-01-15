@@ -18,7 +18,7 @@ module.exports = {
           200: "#FDE68A",
           100: "#FEF3C7",
         },
-        primary: "#3b82f6",
+        primary: "#F59E0B",
       },
       keyframes: {
         lineLoading: {
