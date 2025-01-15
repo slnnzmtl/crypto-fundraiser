@@ -32,14 +32,14 @@ const ErrorPage: React.FC<ErrorPageProps> = ({
               href={action.href}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-block bg-primary hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+              className="inline-block bg-primary hover:bg-yellow-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
             >
               {action.label}
             </a>
           ) : (
             <button
               onClick={action.onClick}
-              className="inline-block bg-primary hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+              className="inline-block bg-primary hover:bg-yellow-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
             >
               {action.label}
             </button>

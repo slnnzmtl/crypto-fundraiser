@@ -32,21 +32,11 @@ const CampaignCard: React.FC = () => {
 
           {/* Progress bar */}
           <div className="space-y-2">
-            <div className="h-2 bg-dark-700/50 rounded-full" />
             <div className="flex justify-between">
               <div className="h-4 bg-dark-700/50 rounded w-20" />
               <div className="h-4 bg-dark-700/50 rounded w-24" />
             </div>
           </div>
-
-          {/* Footer */}
-          <Glass
-            intensity="high"
-            className="flex justify-between items-center p-4 mt-auto"
-          >
-            <div className="h-4 bg-dark-700/50 rounded w-24" />
-            <div className="h-4 bg-dark-700/50 rounded w-20" />
-          </Glass>
         </div>
       </div>
     </Card>
