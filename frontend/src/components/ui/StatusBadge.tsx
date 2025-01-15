@@ -21,7 +21,7 @@ const StatusBadge: React.FC<Props> = ({ campaign, className = "" }) => {
         };
       default:
         return {
-          className: "bg-primary/20 text-blue-500",
+          className: "bg-primary/20 text-yellow-500",
           label: "Active",
         };
     }

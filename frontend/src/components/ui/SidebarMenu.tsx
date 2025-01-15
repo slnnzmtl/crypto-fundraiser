@@ -70,7 +70,7 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = observer(
         <Glass
           intensity="medium"
           className={`
-          fixed inset-0 transition-opacity bg-dark-900/50 dark:bg-dark-900/60 border-none duration-300
+          fixed inset-0 transition-opacity border-none duration-300
           ${isOpen ? "opacity-100" : "opacity-0 pointer-events-none"}
         `}
         >

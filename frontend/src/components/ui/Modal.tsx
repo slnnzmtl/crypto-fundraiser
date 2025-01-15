@@ -41,7 +41,7 @@ const Modal: React.FC<Props> = ({ isOpen, onClose, title, children }) => {
     <Glass
       intensity="high"
       className={cn(
-        "fixed inset-0 transition-opacity duration-300  bg-dark-900/50 dark:bg-dark-900/60 z-50",
+        "fixed inset-0 transition-opacity duration-300  z-50",
         isAnimating ? "opacity-100" : "opacity-0",
       )}
       onClick={handleBackdropClick}

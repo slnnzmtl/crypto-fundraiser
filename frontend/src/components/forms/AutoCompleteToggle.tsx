@@ -10,7 +10,7 @@ const AutoCompleteToggle: React.FC<{
       id="autoComplete"
       checked={checked}
       onChange={onChange}
-      className="w-4 h-4 text-primary bg-dark-800 border-dark-700 rounded focus:ring-blue-500"
+      className="w-4 h-4 text-primary bg-dark-800 border-dark-700 rounded focus:ring-yellow-500"
     />
     <label htmlFor="autoComplete" className="text-white">
       Auto-complete when goal is reached
