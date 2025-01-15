@@ -1,5 +1,5 @@
 import React from "react";
-import { Card, Glass } from "@components/ui";
+import { Card } from "@components/ui";
 import { campaignStore } from "@stores/CampaignStore";
 import { observer } from "mobx-react-lite";
 

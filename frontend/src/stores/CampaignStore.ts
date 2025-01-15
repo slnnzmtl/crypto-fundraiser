@@ -1,18 +1,21 @@
-import { makeAutoObservable, runInAction } from 'mobx';
-import { contractService } from '@services/ContractService';
-import { Campaign, CampaignInput } from '@/types/campaign';
-import { ViewType } from '@interfaces';
-import { ErrorType } from '@error';
-import { walletStore } from './WalletStore';
+import { makeAutoObservable, runInAction } from "mobx";
+import { contractService } from "@services/ContractService";
+import { Campaign, CampaignInput } from "@/types/campaign";
+import { ViewType } from "@interfaces";
+import { ErrorType } from "@error";
+import { walletStore } from "./WalletStore";
 
 class CampaignStore {
   campaigns: Campaign[] = [];
-  donations: Record<number, { donor: string; amount: string; message: string; timestamp: Date; }[]> = {};
+  donations: Record<
+    number,
+    { donor: string; amount: string; message: string; timestamp: Date }[]
+  > = {};
   loading = false;
   initialLoading = true;
-  viewType: ViewType = 'grid';
+  viewType: ViewType = "grid";
   showOnlyOwned = false;
-  currentStatus: 'all' | 'active' | 'completed' | 'failed' = 'all';
+  currentStatus: "all" | "active" | "completed" | "failed" = "all";
 
   constructor() {
     makeAutoObservable(this);
@@ -47,7 +50,7 @@ class CampaignStore {
       await walletStore.connect();
     }
     const campaignId = await contractService.createCampaign(campaignInput);
-    
+
     this.setLoadingState(false, this.initialLoading);
     return campaignId;
   }
@@ -58,7 +61,7 @@ class CampaignStore {
     this.loading = true;
 
     const campaigns = await contractService.getCampaigns();
-    console.log('Campaigns loaded:', campaigns);
+    console.log("Campaigns loaded:", campaigns);
 
     runInAction(() => {
       this.campaigns = campaigns;
@@ -66,79 +69,92 @@ class CampaignStore {
 
     this.setLoadingState(false, false);
   }
-  
+
   async loadCampaignById(id: number): Promise<void> {
     if (this.loading) return;
 
     this.loading = true;
 
     try {
-        const existingCampaign = this.campaigns.find((c: { id: number }) => c.id === id);
+      const existingCampaign = this.campaigns.find(
+        (c: { id: number }) => c.id === id,
+      );
 
-        if (existingCampaign) {
-            console.log('Campaign already loaded:', existingCampaign);
-            await this.refreshCampaign(id);
-            return;
-        }
+      if (existingCampaign) {
+        console.log("Campaign already loaded:", existingCampaign);
+        await this.refreshCampaign(id);
+        return;
+      }
 
-        await this.loadCampaignWithRetries(id);
+      await this.loadCampaignWithRetries(id);
     } catch (error) {
-        console.error('Error loading campaign:', error);
-        this.handleError(error);
+      console.error("Error loading campaign:", error);
+      this.handleError(error);
     } finally {
-        this.setLoadingState(false, false);
+      this.setLoadingState(false, false);
     }
   }
 
   async refreshCampaign(id: number): Promise<void> {
-      const campaign = await contractService.getCampaign(id);
-      if (campaign) {
-          runInAction(() => {
-              const index = this.campaigns.findIndex((c: { id: number }) => c.id === id);
-              if (index !== -1) {
-                  this.campaigns[index] = campaign;
-              }
-          });
-      }
+    const campaign = await contractService.getCampaign(id);
+    if (campaign) {
+      runInAction(() => {
+        const index = this.campaigns.findIndex(
+          (c: { id: number }) => c.id === id,
+        );
+        if (index !== -1) {
+          this.campaigns[index] = campaign;
+        }
+      });
+    }
   }
 
-  async loadCampaignWithRetries(id: number, retries = 3, delayFactor = 1000): Promise<void> {
-      for (let attempt = 0; attempt < retries; attempt++) {
-          const campaign = await contractService.getCampaign(id);
-          if (campaign) {
-            runInAction(() => {
-                const existingIndex = this.campaigns.findIndex((c: { id: number }) => c.id === id);
+  async loadCampaignWithRetries(
+    id: number,
+    retries = 3,
+    delayFactor = 1000,
+  ): Promise<void> {
+    for (let attempt = 0; attempt < retries; attempt++) {
+      const campaign = await contractService.getCampaign(id);
+      if (campaign) {
+        runInAction(() => {
+          const existingIndex = this.campaigns.findIndex(
+            (c: { id: number }) => c.id === id,
+          );
 
-                if (existingIndex !== -1) {
-                    this.campaigns[existingIndex] = campaign;
-                } else {
-                    this.campaigns.push(campaign);
-                }
-            });
-            return;
+          if (existingIndex !== -1) {
+            this.campaigns[existingIndex] = campaign;
+          } else {
+            this.campaigns.push(campaign);
           }
-
-          await this.delay((attempt + 1) * delayFactor);
+        });
+        return;
       }
 
-      throw new Error(`Campaign with ID ${id} not found`);
+      await this.delay((attempt + 1) * delayFactor);
+    }
+
+    throw new Error(`Campaign with ID ${id} not found`);
   }
 
   async delay(ms: number): Promise<void> {
-      return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   async loadCampaignDonations(id: number) {
     try {
       this.setLoadingState(true, false);
       const donations = await contractService.getCampaignDonations(id);
-      console.log('Donations loaded:', donations);
-      
+      console.log("Donations loaded:", donations);
+
       runInAction(() => {
-        this.donations[id] = donations;
+        this.donations = {
+          ...this.donations,
+          [id]: donations,
+        };
       });
     } catch (error) {
-      console.error('Error loading donations:', error);
+      console.error("Error loading donations:", error);
       runInAction(() => {
         this.donations[id] = [];
       });
@@ -147,17 +163,14 @@ class CampaignStore {
     }
   }
 
-  async donate(id: number, amount: number, message: string = '') {
+  async donate(id: number, amount: number, message: string = "") {
     try {
       this.setLoadingState(true, false);
       await contractService.donate(id, amount, message);
-      
-      await Promise.all([
-        this.loadCampaigns(),
-        this.loadCampaignDonations(id)
-      ]);
+
+      await Promise.all([this.loadCampaigns(), this.loadCampaignDonations(id)]);
     } catch (error) {
-      console.error('Error donating:', error);
+      console.error("Error donating:", error);
       this.handleError(error);
     } finally {
       this.setLoadingState(false, false);
@@ -180,10 +193,10 @@ class CampaignStore {
 
   private handleError(error: unknown) {
     if (error instanceof Error) {
-      if (error.message.includes('user rejected')) {
+      if (error.message.includes("user rejected")) {
         throw new Error(ErrorType.USER_REJECTED);
       }
-      if (error.message.includes('insufficient funds')) {
+      if (error.message.includes("insufficient funds")) {
         throw new Error(ErrorType.INSUFFICIENT_FUNDS);
       }
     }
@@ -194,14 +207,17 @@ class CampaignStore {
     let filtered = this.campaigns;
 
     // Filter by status
-    if (this.currentStatus !== 'all') {
-      filtered = filtered.filter(campaign => campaign.status === this.currentStatus);
+    if (this.currentStatus !== "all") {
+      filtered = filtered.filter(
+        (campaign) => campaign.status === this.currentStatus,
+      );
     }
 
     // Filter by ownership
     if (this.showOnlyOwned) {
-      filtered = filtered.filter(campaign => 
-        campaign.owner.toLowerCase() === walletStore.address?.toLowerCase()
+      filtered = filtered.filter(
+        (campaign) =>
+          campaign.owner.toLowerCase() === walletStore.address?.toLowerCase(),
       );
     }
 
@@ -216,7 +232,7 @@ class CampaignStore {
     this.showOnlyOwned = show;
   }
 
-  setStatus(status: 'all' | 'active' | 'completed' | 'failed') {
+  setStatus(status: "all" | "active" | "completed" | "failed") {
     this.currentStatus = status;
   }
 }

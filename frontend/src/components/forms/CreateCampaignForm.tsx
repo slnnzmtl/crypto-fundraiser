@@ -1,10 +1,9 @@
-import React from 'react';
-import { Input, TextArea, Button } from '../ui/primitives';
-import { useCreateCampaignForm } from '@hooks/useCreateCampaignForm';
-import { pluralize } from '@utils/format';
-import GoalInput from './GoalInput';
-import DurationInput from './DurationInput';
-import AutoCompleteToggle from './AutoCompleteToggle';
+import React from "react";
+import { Input, TextArea, Button } from "../ui/primitives";
+import { useCreateCampaignForm } from "@hooks/useCreateCampaignForm";
+import GoalInput from "./GoalInput";
+import DurationInput from "./DurationInput";
+import AutoCompleteToggle from "./AutoCompleteToggle";
 
 interface Props {
   onSuccess: () => void;
@@ -26,6 +25,7 @@ const CreateCampaignForm: React.FC<Props> = ({ onSuccess }) => {
         value={formData.title}
         onChange={handleChange}
         label="Campaign Title"
+        disabled={isSubmitting}
         required
       />
 
@@ -35,6 +35,7 @@ const CreateCampaignForm: React.FC<Props> = ({ onSuccess }) => {
         onChange={handleChange}
         label="Description"
         required
+        disabled={isSubmitting}
         rows={3}
       />
 
@@ -48,15 +49,17 @@ const CreateCampaignForm: React.FC<Props> = ({ onSuccess }) => {
         onChange={handleChange}
         label="Image URL"
         placeholder="https://"
+        disabled={isSubmitting}
       />
 
       <AutoCompleteToggle
         checked={formData.autoComplete}
         onChange={handleToggleAutoComplete}
+        disabled={isSubmitting}
       />
 
       <Button type="submit" className="h-12" isLoading={isSubmitting}>
-        {isSubmitting ? 'Creating...' : 'Create Campaign'}
+        {isSubmitting ? "Creating..." : "Create Campaign"}
       </Button>
     </form>
   );

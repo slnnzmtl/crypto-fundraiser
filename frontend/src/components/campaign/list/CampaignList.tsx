@@ -124,7 +124,7 @@ const CampaignList: React.FC = observer(() => {
         </motion.div>
       </AnimatePresence>
     );
-  }, [viewType, isLoading, campaigns]);
+  }, [viewType, isLoading, campaigns, handleCreateClick]);
 
   return (
     <div className="mt-8 flex flex-col gap-6">
@@ -154,14 +154,18 @@ const CampaignList: React.FC = observer(() => {
       )}
 
       <div className="flex flex-col md:flex-row gap-6">
-        <motion.div
-          variants={filterVariants}
-          initial="closed"
-          animate={isFilterOpen ? "open" : "closed"}
-          className="overflow-hidden flex-shrink-0"
-        >
-          <div className="w-80">{!isLoading && <FilterPanel />}</div>
-        </motion.div>
+        {!isLoading && (
+          <motion.div
+            variants={filterVariants}
+            initial="closed"
+            animate={isFilterOpen ? "open" : "closed"}
+            className="overflow-hidden flex-shrink-0"
+          >
+            <div className="w-80">
+              <FilterPanel />
+            </div>
+          </motion.div>
+        )}
 
         <div className="flex-1 min-w-0">{renderContent()}</div>
       </div>

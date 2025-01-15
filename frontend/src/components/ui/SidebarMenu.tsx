@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useCallback } from "react";
+import React, { useEffect, useRef } from "react";
 import { observer } from "mobx-react-lite";
 import { Button, Glass } from "@components/index";
 import { campaignStore, walletStore } from "@stores/index";
