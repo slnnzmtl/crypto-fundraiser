@@ -1,5 +1,5 @@
 import React from "react";
-import { useModal, ModalType } from "../../hooks/useModal";
+import { useModal } from "../../hooks/useModal";
 import CreateCampaignModal from "./CreateCampaignModal";
 
 const Modals: React.FC = () => {

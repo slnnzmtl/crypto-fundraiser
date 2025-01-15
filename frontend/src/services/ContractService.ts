@@ -1,7 +1,7 @@
-import { ethers } from 'ethers';
-import { Campaign, CampaignInput } from '../types/campaign';
-import { ErrorType } from '../types/error';
-import CryptoFundraiserArtifact from '../abi/CryptoFundraiser.json';
+import { ethers } from "ethers";
+import { Campaign, CampaignInput } from "../types/campaign";
+import { ErrorType } from "../types/error";
+import CryptoFundraiserArtifact from "../abi/CryptoFundraiser.json";
 
 declare global {
   interface Window {
@@ -10,20 +10,21 @@ declare global {
 }
 
 const CONTRACT_ADDRESS = process.env.REACT_APP_CONTRACT_ADDRESS;
-export const WALLET_DISCONNECTED_KEY = 'wallet_disconnected';
+export const WALLET_DISCONNECTED_KEY = "wallet_disconnected";
 
 // Check contract address on initialization
 if (!CONTRACT_ADDRESS) {
-  console.error('Contract address is not configured in .env file');
+  console.error("Contract address is not configured in .env file");
 }
 
 // Helper function to check if wallet is disconnected
-export const isWalletDisconnected = () => localStorage.getItem(WALLET_DISCONNECTED_KEY) === 'true';
+export const isWalletDisconnected = () =>
+  localStorage.getItem(WALLET_DISCONNECTED_KEY) === "true";
 
 // Helper function to set wallet disconnected state
 export const setWalletDisconnected = (disconnected: boolean) => {
   if (disconnected) {
-    localStorage.setItem(WALLET_DISCONNECTED_KEY, 'true');
+    localStorage.setItem(WALLET_DISCONNECTED_KEY, "true");
   } else {
     localStorage.removeItem(WALLET_DISCONNECTED_KEY);
   }
@@ -35,25 +36,25 @@ interface RawCampaign {
   title: string;
   description: string;
   image: string;
-  goal: bigint;      // uint96
-  deadline: bigint;  // uint40
-  balance: bigint;   // uint96
+  goal: bigint; // uint96
+  deadline: bigint; // uint40
+  balance: bigint; // uint96
   completed: boolean;
   autoComplete: boolean;
-  status: number;    // enum Status
+  status: number; // enum Status
 }
 
 // Centralized error handling function
-function handleError(error: any, context: string) {
+function handleError(error: unknown, context: string) {
   console.error(`Error in ${context}:`, error);
   if (error instanceof Error) {
-    if (error.message.includes('user rejected')) {
+    if (error.message.includes("user rejected")) {
       throw new Error(ErrorType.USER_REJECTED);
     }
-    if (error.message.includes('insufficient funds')) {
+    if (error.message.includes("insufficient funds")) {
       throw new Error(ErrorType.INSUFFICIENT_FUNDS);
     }
-    if (error.message.includes('-32002')) {
+    if (error.message.includes("-32002")) {
       throw new Error(ErrorType.METAMASK_PENDING);
     }
     throw new Error(`${ErrorType.NETWORK}: ${error.message}`);
@@ -70,7 +71,7 @@ class ContractService {
 
   private validateContractAddress(): string {
     if (!CONTRACT_ADDRESS) {
-      throw new Error('Contract address is not configured');
+      throw new Error("Contract address is not configured");
     }
     return CONTRACT_ADDRESS;
   }
@@ -105,7 +106,7 @@ class ContractService {
     }
 
     // Request account access
-    const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+    const accounts = await ethereum.request({ method: "eth_requestAccounts" });
     if (!accounts || accounts.length === 0) {
       throw new Error(ErrorType.METAMASK);
     }
@@ -113,11 +114,11 @@ class ContractService {
     this.provider = new ethers.BrowserProvider(ethereum);
     const signer = await this.provider.getSigner();
     const contractAddress = this.validateContractAddress();
-    
+
     this.contract = new ethers.Contract(
       contractAddress,
       CryptoFundraiserArtifact.abi,
-      signer
+      signer,
     );
 
     // Clear disconnected state since we're now connected
@@ -144,8 +145,8 @@ class ContractService {
       return await this.connectionPromise;
     } catch (error) {
       this.clearConnectionState();
-      handleError(error, 'connect');
-      return '';
+      handleError(error, "connect");
+      return "";
     }
   }
 
@@ -163,7 +164,7 @@ class ContractService {
 
       return await this.establishConnection();
     } catch (error) {
-      handleError(error, 'checkConnection');
+      handleError(error, "checkConnection");
       return null;
     }
   }
@@ -175,7 +176,7 @@ class ContractService {
 
     if (this.cachedCampaignCount === null) {
       const count = await this.contract.campaignCount();
-      console.log('Campaign count:', count);
+      console.log("Campaign count:", count);
       this.cachedCampaignCount = Number(count);
     }
     return this.cachedCampaignCount;
@@ -190,55 +191,60 @@ class ContractService {
       }
 
       const count = await this.fetchCampaignCount();
-      
+
       // If count is 0 or decoding fails, return empty array
       if (count === 0) {
-        console.log('No campaigns found');
+        console.log("No campaigns found");
         return [];
       }
 
-      const campaigns = await this.contract.getCampaigns() as RawCampaign[];
-      console.log('Raw campaigns:', campaigns);
-      
+      const campaigns = (await this.contract.getCampaigns()) as RawCampaign[];
+      console.log("Raw campaigns:", campaigns);
+
       if (!campaigns || campaigns.length === 0) {
         return [];
       }
 
-      return campaigns.map((campaign, index) => {
-        try {
-          // Handle BigInt values properly
-          const goal = campaign.goal?.toString() || '0';
-          const deadline = campaign.deadline?.toString() || '0';
-          const balance = campaign.balance?.toString() || '0';
+      return campaigns
+        .map((campaign, index) => {
+          try {
+            // Handle BigInt values properly
+            const goal = campaign.goal?.toString() || "0";
+            const deadline = campaign.deadline?.toString() || "0";
+            const balance = campaign.balance?.toString() || "0";
 
-          return {
-            id: index,
-            creator: campaign.owner,
-            owner: campaign.owner,
-            title: campaign.title?.trim() || '',
-            description: campaign.description?.trim() || '',
-            image: campaign.image?.trim() || '',
-            goal: ethers.formatEther(goal),
-            pledged: ethers.formatEther(balance),
-            startAt: new Date(0),
-            endAt: new Date(Number(deadline) * 1000),
-            autoComplete: campaign.autoComplete,
-            status: this.mapStatus(campaign.status)
-          };
-        } catch (error) {
-          console.error(`Failed to process campaign at index ${index}:`, error);
-          return null;
-        }
-      }).filter((campaign): campaign is Campaign => campaign !== null);
+            return {
+              id: index,
+              creator: campaign.owner,
+              owner: campaign.owner,
+              title: campaign.title?.trim() || "",
+              description: campaign.description?.trim() || "",
+              image: campaign.image?.trim() || "",
+              goal: ethers.formatEther(goal),
+              pledged: ethers.formatEther(balance),
+              startAt: new Date(0),
+              endAt: new Date(Number(deadline) * 1000),
+              autoComplete: campaign.autoComplete,
+              status: this.mapStatus(campaign.status),
+            };
+          } catch (error) {
+            console.error(
+              `Failed to process campaign at index ${index}:`,
+              error,
+            );
+            return null;
+          }
+        })
+        .filter((campaign): campaign is Campaign => campaign !== null);
     } catch (error) {
-      handleError(error, 'getCampaigns');
+      handleError(error, "getCampaigns");
       return [];
     }
   }
 
-  private mapStatus(status: number): 'active' | 'completed' | 'failed' {
-    const statusMap = ['active', 'completed', 'failed'];
-    return statusMap[status] as 'active' | 'completed' | 'failed';
+  private mapStatus(status: number): "active" | "completed" | "failed" {
+    const statusMap = ["active", "completed", "failed"];
+    return statusMap[status] as "active" | "completed" | "failed";
   }
 
   async getCampaign(id: number): Promise<Campaign | null> {
@@ -254,18 +260,18 @@ class ContractService {
         id,
         creator: campaign.owner,
         owner: campaign.owner,
-        title: campaign.title || '',
-        description: campaign.description || '',
-        image: campaign.image || '',
+        title: campaign.title || "",
+        description: campaign.description || "",
+        image: campaign.image || "",
         goal: ethers.formatEther(campaign.goal),
         pledged: ethers.formatEther(campaign.balance),
         startAt: new Date(0), // Contract doesn't store start time
         endAt: new Date(Number(campaign.deadline) * 1000),
         autoComplete: campaign.autoComplete,
-        status: this.mapStatus(campaign.status)
+        status: this.mapStatus(campaign.status),
       };
     } catch (error) {
-      console.error('Failed to get campaign:', error);
+      console.error("Failed to get campaign:", error);
       return null;
     }
   }
@@ -276,34 +282,35 @@ class ContractService {
     }
 
     try {
-      const { title, description, goal, durationInDays, image, autoComplete } = campaignInput;
-      
+      const { title, description, goal, durationInDays, image, autoComplete } =
+        campaignInput;
+
       // Validate input data
       if (!title?.trim()) {
-        throw new Error('Title is required');
+        throw new Error("Title is required");
       }
       if (!description?.trim()) {
-        throw new Error('Description is required');
+        throw new Error("Description is required");
       }
       if (!goal || isNaN(Number(goal)) || Number(goal) <= 0) {
-        throw new Error('Goal must be a positive number');
+        throw new Error("Goal must be a positive number");
       }
       if (!durationInDays || durationInDays <= 0) {
-        throw new Error('Duration must be a positive number');
+        throw new Error("Duration must be a positive number");
       }
 
       const goalInWei = ethers.parseEther(goal.toString());
-      
+
       // Ensure durationInDays is uint16
       const duration = Math.min(Math.max(1, durationInDays), 180);
-      
+
       const tx = await this.contract.createCampaign(
         title.trim(),
         description.trim(),
         goalInWei,
         duration,
-        image?.trim() || '',
-        autoComplete
+        image?.trim() || "",
+        autoComplete,
       );
       await tx.wait();
 
@@ -314,12 +321,16 @@ class ContractService {
       const count = await this.contract.campaignCount();
       return Number(count) - 1;
     } catch (error) {
-      handleError(error, 'createCampaign');
+      handleError(error, "createCampaign");
       return -1;
     }
   }
 
-  async donate(campaignId: number, amount: number, message: string = ''): Promise<void> {
+  async donate(
+    campaignId: number,
+    amount: number,
+    message: string = "",
+  ): Promise<void> {
     if (!this.contract) {
       throw new Error(ErrorType.METAMASK);
     }
@@ -327,59 +338,61 @@ class ContractService {
     try {
       // Convert amount to Wei and ensure it's a valid number
       const amountInWei = ethers.parseEther(amount.toString());
-      
+
       // Ensure message is never undefined or null
-      console.log('Preparing donation:', {
+      console.log("Preparing donation:", {
         campaignId,
         message,
-        value: amountInWei.toString()
+        value: amountInWei.toString(),
       });
 
       // Get gas estimate first
       const gasEstimate = await this.contract.donate.estimateGas(
         campaignId,
-        message || '',
-        { value: amountInWei }
+        message || "",
+        { value: amountInWei },
       );
 
-      console.log('Gas estimate:', gasEstimate.toString());
+      console.log("Gas estimate:", gasEstimate.toString());
 
       // Add 20% buffer to gas estimate
       const gasLimit = Math.floor(Number(gasEstimate) * 1.2);
 
       console.log({
         campaignId: campaignId,
-        message: message || '',
+        message: message || "",
         value: amountInWei.toString(),
-        gasLimit
+        gasLimit,
       });
       // Send transaction with estimated gas
-      const tx = await this.contract.donate(
-        campaignId,
-        message || '',
-        {
-          value: amountInWei,
-          gasLimit
-        }
-      );
+      const tx = await this.contract.donate(campaignId, message || "", {
+        value: amountInWei,
+        gasLimit,
+      });
 
-      console.log('Donation transaction sent:', tx);
+      console.log("Donation transaction sent:", tx);
       const receipt = await tx.wait();
-      console.log('Donation confirmed:', receipt);
-    } catch (error: any) {
-      console.error('Donation error:', error);
-      
+      console.log("Donation confirmed:", receipt);
+    } catch (error: Error | unknown) {
+      console.error("Donation error:", error);
+
       // Check for specific error cases
-      if (error.code === 'UNPREDICTABLE_GAS_LIMIT') {
-        const reason = error.reason || 'Transaction would fail';
+      if (
+        typeof error === "object" &&
+        error !== null &&
+        "code" in error &&
+        error.code === "UNPREDICTABLE_GAS_LIMIT"
+      ) {
+        const reason =
+          "reason" in error
+            ? (error.reason as string)
+            : "Transaction would fail";
         throw new Error(`${ErrorType.CONTRACT_ERROR}: ${reason}`);
       }
-      
-      handleError(error, 'donate');
+
+      handleError(error, "donate");
     }
   }
-
-  
 
   async completeCampaign(campaignId: number): Promise<void> {
     if (!this.contract) {
@@ -391,7 +404,7 @@ class ContractService {
       const tx = await this.contract.completeCampaign(campaignId >>> 0);
       await tx.wait();
     } catch (error) {
-      handleError(error, 'completeCampaign');
+      handleError(error, "completeCampaign");
     }
   }
 
@@ -405,7 +418,7 @@ class ContractService {
       const tx = await this.contract.withdrawFunds(campaignId >>> 0);
       await tx.wait();
     } catch (error) {
-      handleError(error, 'withdrawFunds');
+      handleError(error, "withdrawFunds");
     }
   }
 
@@ -418,12 +431,16 @@ class ContractService {
       // Ensure campaignId is uint32
       return await this.contract.canWithdrawFunds(campaignId >>> 0);
     } catch (error) {
-      handleError(error, 'canWithdrawFunds');
+      handleError(error, "canWithdrawFunds");
       return false;
     }
   }
 
-  async getCampaignDonations(campaignId: number): Promise<{ donor: string; amount: string; message: string; timestamp: Date; }[]> {
+  async getCampaignDonations(
+    campaignId: number,
+  ): Promise<
+    { donor: string; amount: string; message: string; timestamp: Date }[]
+  > {
     if (!this.contract || !this.provider) {
       throw new Error(ErrorType.METAMASK);
     }
@@ -431,41 +448,43 @@ class ContractService {
     try {
       // Get donation events for this campaign using the correct event signature
       const filter = this.contract.filters.DonationReceived(
-        campaignId,  // campaignId as uint32
-        null              // any donor address
+        campaignId, // campaignId as uint32
+        null, // any donor address
       );
-      
-      const events = await this.contract.queryFilter(filter, 0, 'latest');
-      console.log('Found donation events:', events);
-      
+
+      const events = await this.contract.queryFilter(filter, 0, "latest");
+      console.log("Found donation events:", events);
+
       // Map events to donation objects
-      const donations = await Promise.all(events.map(async (event) => {
-        if (!('args' in event) || !event.args) {
-          console.error('Event is not properly formatted:', event);
-          return null;
-        }
+      const donations = await Promise.all(
+        events.map(async (event) => {
+          if (!("args" in event) || !event.args) {
+            console.error("Event is not properly formatted:", event);
+            return null;
+          }
 
-        const block = await event.getBlock();
-        const eventLog = event as ethers.EventLog;
+          const block = await event.getBlock();
+          const eventLog = event as ethers.EventLog;
 
-        return {
-          donor: eventLog.args[1], // donor is the second argument
-          amount: ethers.formatEther(eventLog.args[2]), // amount is the third argument
-          message: eventLog.args[3] || '', // message is the fourth argument
-          timestamp: new Date(block.timestamp * 1000)
-        };
-      }));
-      
+          return {
+            donor: eventLog.args[1], // donor is the second argument
+            amount: ethers.formatEther(eventLog.args[2]), // amount is the third argument
+            message: eventLog.args[3] || "", // message is the fourth argument
+            timestamp: new Date(block.timestamp * 1000),
+          };
+        }),
+      );
+
       // Filter out null values and sort by timestamp
       return donations
         .filter((d): d is NonNullable<typeof d> => d !== null)
         .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
     } catch (error) {
-      console.error('Error getting campaign donations:', error);
-      handleError(error, 'getCampaignDonations');
+      console.error("Error getting campaign donations:", error);
+      handleError(error, "getCampaignDonations");
       return [];
     }
   }
 }
 
-export const contractService = new ContractService(); 
+export const contractService = new ContractService();

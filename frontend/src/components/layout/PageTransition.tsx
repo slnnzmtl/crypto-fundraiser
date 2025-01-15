@@ -1,6 +1,5 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { theme } from '@/theme';
+import React from "react";
+import { motion } from "framer-motion";
 
 interface PageTransitionProps {
   children: React.ReactNode;
@@ -19,4 +18,4 @@ const PageTransition: React.FC<PageTransitionProps> = ({ children }) => {
   );
 };
 
-export default PageTransition; 
+export default PageTransition;

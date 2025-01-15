@@ -1,8 +1,6 @@
-import { MetaMaskInpageProvider } from '@metamask/providers';
-import { Eip1193Provider } from 'ethers';
+import { Eip1193Provider } from "ethers";
 
 // Use intersection type for compatibility
-type ExtendedMetaMaskProvider = MetaMaskInpageProvider & Eip1193Provider;
 
 // Declare the global window interface with the combined type
 declare global {
@@ -12,7 +10,14 @@ declare global {
 }
 
 // Helper type for ethereum provider events
-export type EthereumEvent = 'chainChanged' | 'accountsChanged' | 'connect' | 'disconnect';
+export type EthereumEvent =
+  | "chainChanged"
+  | "accountsChanged"
+  | "connect"
+  | "disconnect";
 
 // Helper type for ethereum provider methods
-export type EthereumMethod = 'eth_chainId' | 'eth_requestAccounts' | 'wallet_switchEthereumChain'; 
+export type EthereumMethod =
+  | "eth_chainId"
+  | "eth_requestAccounts"
+  | "wallet_switchEthereumChain";
