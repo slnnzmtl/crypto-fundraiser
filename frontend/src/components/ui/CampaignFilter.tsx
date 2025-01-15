@@ -1,6 +1,6 @@
-import React from 'react';
-import { observer } from 'mobx-react-lite';
-import { campaignStore, walletStore } from '@stores/index';
+import React from "react";
+import { observer } from "mobx-react-lite";
+import { campaignStore, walletStore } from "@stores/index";
 
 export const CampaignFilter: React.FC = observer(() => {
   if (!walletStore.address) {
@@ -13,11 +13,11 @@ export const CampaignFilter: React.FC = observer(() => {
         type="checkbox"
         checked={campaignStore.showOnlyOwned}
         onChange={(e) => campaignStore.setShowOnlyOwned(e.target.checked)}
-        className="w-4 h-4 rounded border-gray-600 bg-dark-800 text-blue-600 focus:ring-blue-600"
+        className="w-4 h-4 rounded border-gray-600 bg-dark-800 text-primary focus:ring-primary"
       />
       <span>Show only my campaigns</span>
     </label>
   );
 });
 
-export default CampaignFilter; 
+export default CampaignFilter;
