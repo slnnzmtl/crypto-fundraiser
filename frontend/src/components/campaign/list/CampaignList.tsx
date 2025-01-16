@@ -4,9 +4,9 @@ import { observer } from "mobx-react-lite";
 import { ViewToggle } from "@components/ui";
 import { EmptyState, CampaignListPlaceholder } from "@components/feedback";
 import CampaignListItem from "@components/campaign/list/CampaignListItem";
-import { useCampaignList } from "@hooks/useCampaignList";
 import FilterPanel from "@components/campaign/FilterPanel";
 import { theme } from "@/theme";
+import { Campaign } from "@/types/campaign";
 
 const containerVariants = {
   grid: {
@@ -53,9 +53,12 @@ const filterVariants = {
   },
 };
 
-const CampaignList: React.FC = observer(() => {
-  const { campaigns, isLoading, viewType, handleCreateClick } =
-    useCampaignList();
+const CampaignList: React.FC<{
+  campaigns: Campaign[];
+  isLoading: boolean;
+  viewType: "grid" | "list";
+  handleCreateClick: () => void;
+}> = observer(({ campaigns, isLoading, viewType, handleCreateClick }) => {
   const [isFilterOpen, setIsFilterOpen] = useState(true);
 
   const renderContent = useCallback(() => {
