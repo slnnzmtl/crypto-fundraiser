@@ -1,34 +1,40 @@
-import { useCallback, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { walletStore } from '@/stores';
-import { EthereumMethod } from '@/types/ethereum';
+import { useCallback, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import { walletStore } from "@/stores";
+import { EthereumMethod } from "@/types/ethereum";
+import { ErrorType } from "@/types/error";
 
-export const useNetworkChange = () => {
+export const useNetworkChange = (showError: (error: ErrorType) => void) => {
   const navigate = useNavigate();
   const currentChainId = useRef<string | null>(null);
 
   const handleNetworkChange = useCallback(async () => {
-    if (typeof window === 'undefined' || !window.ethereum) return;
+    if (typeof window === "undefined" || !window.ethereum) return;
 
     try {
-      const newChainId = await window.ethereum.request({ 
-        method: 'eth_chainId' as EthereumMethod 
+      const newChainId = await window.ethereum.request({
+        method: "eth_chainId" as EthereumMethod,
       });
-      
-      if (typeof newChainId === 'string' && currentChainId.current && newChainId !== currentChainId.current) {
-        // Reset wallet connection
+
+      // Check if network is Sepolia (chainId: 0xaa36a7)
+      if (newChainId !== "0xaa36a7") {
+        showError(ErrorType.NETWORK);
+      }
+
+      if (
+        typeof newChainId === "string" &&
+        currentChainId.current &&
+        newChainId !== currentChainId.current
+      ) {
         await walletStore.disconnect();
-        
-        // Navigate to home page
-        navigate('/', { replace: true });
-        
-        // Reload the page to reset all states
+        navigate("/", { replace: true });
+
         window.location.reload();
       }
-      
+
       currentChainId.current = newChainId as string;
     } catch (error) {
-      console.error('Failed to handle network change:', error);
+      console.error("Failed to handle network change:", error);
     }
   }, [navigate]);
 
@@ -43,4 +49,4 @@ export const useNetworkChange = () => {
       clearInterval(interval);
     };
   }, [handleNetworkChange]);
-}; 
+};

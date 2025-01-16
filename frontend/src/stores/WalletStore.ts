@@ -1,6 +1,6 @@
-import { makeAutoObservable, action } from 'mobx';
-import { contractService } from '@services/ContractService';
-import { ErrorType } from '@error';
+import { makeAutoObservable, action } from "mobx";
+import { contractService } from "@services/ContractService";
+import { ErrorType } from "@error";
 
 class WalletStore {
   address: string | null = null;
@@ -27,10 +27,18 @@ class WalletStore {
   async checkConnection(): Promise<boolean> {
     try {
       const address = await contractService.checkConnection();
+
+      const provider = contractService.getProvider();
+      const network = await provider?.getNetwork();
+
+      if (network?.chainId !== BigInt(11155111)) {
+        walletStore.disconnect();
+      }
+
       this.setAddress(address);
       return !!address;
     } catch (error) {
-      console.error('Failed to check connection:', error);
+      console.error("Failed to check connection:", error);
       return false;
     }
   }
@@ -66,4 +74,4 @@ class WalletStore {
   });
 }
 
-export const walletStore = new WalletStore(); 
+export const walletStore = new WalletStore();
