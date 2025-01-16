@@ -25,24 +25,6 @@ const containerVariants = {
   },
 };
 
-const itemVariants = {
-  grid: {
-    scale: 1,
-    opacity: 1,
-    transition: { duration: 0.3 },
-  },
-  list: {
-    scale: 1,
-    opacity: 1,
-    transition: { duration: 0.3 },
-  },
-  exit: {
-    scale: 0.95,
-    opacity: 0,
-    transition: { duration: 0.2 },
-  },
-};
-
 const filterVariants = {
   open: {
     width: "20rem",
@@ -106,20 +88,13 @@ const CampaignList: React.FC = observer(() => {
             ${
               viewType === "grid"
                 ? "grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 auto-rows-fr gap-6"
-                : "space-y-4"
+                : "flex flex-col gap-6"
             }
           `}
           style={{ color: theme.colors.dark[100] }}
         >
           {campaigns.map((campaign) => (
-            <motion.div
-              key={campaign.id}
-              variants={itemVariants}
-              layout
-              className="h-full"
-            >
-              <CampaignListItem campaign={campaign} viewType={viewType} />
-            </motion.div>
+            <CampaignListItem campaign={campaign} viewType={viewType} />
           ))}
         </motion.div>
       </AnimatePresence>
