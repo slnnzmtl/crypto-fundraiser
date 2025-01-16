@@ -1,17 +1,17 @@
-import { useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useError } from './useError';
-import { campaignStore } from '@stores/CampaignStore';
-import { CampaignInput } from '@/types/campaign';
-import { ErrorType } from '@error';
+import { useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import { useError } from "./useError";
+import { campaignStore } from "@stores/CampaignStore";
+import { CampaignInput } from "@/types/campaign";
+import { ErrorType } from "@error";
 
 const initialFormData: CampaignInput = {
-  title: 'New Campaign',
-  description: 'New Campaign Description',
-  goal: '1',
+  title: "",
+  description: "",
+  goal: "",
   durationInDays: 30,
-  image: 'https://images.unsplash.com/photo-1709761942157-2014363b2d09?q=80&w=2942&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-  autoComplete: false,
+  image: "",
+  autoComplete: true,
 };
 
 export const useCreateCampaignForm = (onSuccess: () => void) => {
@@ -25,16 +25,19 @@ export const useCreateCampaignForm = (onSuccess: () => void) => {
       const { name, value } = e.target;
 
       setFormData((prev) => {
-        if (name === 'goal') {
-          const numericValue = value.replace(/[^\d.]/g, '');
-          const parts = numericValue.split('.');
+        if (name === "goal") {
+          const numericValue = value.replace(/[^\d.]/g, "");
+          const parts = numericValue.split(".");
           return {
             ...prev,
-            [name]: parts.length > 1 ? `${parts[0]}.${parts[1].slice(0, 4)}` : parts[0],
+            [name]:
+              parts.length > 1
+                ? `${parts[0]}.${parts[1].slice(0, 4)}`
+                : parts[0],
           };
         }
 
-        if (name === 'durationInDays') {
+        if (name === "durationInDays") {
           const intValue = parseInt(value, 10) || 30;
           return { ...prev, [name]: Math.max(1, intValue) };
         }
@@ -42,7 +45,7 @@ export const useCreateCampaignForm = (onSuccess: () => void) => {
         return { ...prev, [name]: value };
       });
     },
-    []
+    [],
   );
 
   const handleToggleAutoComplete = useCallback(() => {
@@ -57,7 +60,7 @@ export const useCreateCampaignForm = (onSuccess: () => void) => {
       setIsSubmitting(true);
       try {
         const campaignId = await campaignStore.createCampaign(formData);
-        if (typeof campaignId === 'number') {
+        if (typeof campaignId === "number") {
           onSuccess();
           navigate(`/campaigns/${campaignId}`);
         } else {
@@ -77,7 +80,7 @@ export const useCreateCampaignForm = (onSuccess: () => void) => {
         setIsSubmitting(false);
       }
     },
-    [formData, isSubmitting, navigate, onSuccess, showError]
+    [formData, isSubmitting, navigate, onSuccess, showError],
   );
 
   return {
@@ -87,4 +90,4 @@ export const useCreateCampaignForm = (onSuccess: () => void) => {
     handleToggleAutoComplete,
     handleSubmit,
   };
-}; 
+};
