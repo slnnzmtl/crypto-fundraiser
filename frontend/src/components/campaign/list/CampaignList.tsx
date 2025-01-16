@@ -105,7 +105,7 @@ const CampaignList: React.FC<{
   }, [viewType, isLoading, campaigns, handleCreateClick]);
 
   return (
-    <div className="mt-8 flex flex-col gap-6">
+    <div className="mt-8 flex flex-col gap-6 min-h-screen">
       {!isLoading && (
         <div className="flex justify-between items-center gap-4">
           <button
@@ -131,13 +131,13 @@ const CampaignList: React.FC<{
         </div>
       )}
 
-      <div className="flex flex-col md:flex-row gap-6">
+      <div className="flex flex-col md:flex-row gap-6 flex-grow">
         {!isLoading && (
           <motion.div
             variants={filterVariants}
             initial="closed"
             animate={isFilterOpen ? "open" : "closed"}
-            className="overflow-hidden flex-shrink-0"
+            className="overflow-hidden flex-shrink-0 md:sticky top-24 self-start h-fit"
           >
             <div className="w-80">
               <FilterPanel />

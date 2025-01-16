@@ -22,7 +22,7 @@ const FilterPanel: React.FC = observer(() => {
   ];
 
   return (
-    <Card type="material" className="sticky top-24">
+    <Card type="material">
       <div className="flex flex-col gap-6">
         {walletStore.address && (
           <div className="space-y-3">
