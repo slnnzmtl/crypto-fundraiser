@@ -19,21 +19,6 @@ class CampaignStore {
 
   constructor() {
     makeAutoObservable(this);
-    this.initialize();
-  }
-
-  private async initialize() {
-    const isConnected = await walletStore.checkConnection();
-
-    // runInAction(() => {
-    //   this.initialLoading = false;
-
-    //   if (isConnected) {
-    //     this.loadCampaigns();
-    //   }
-    // });
-
-    this.setLoadingState(false, false);
   }
 
   private setLoadingState(loading: boolean, initialLoading: boolean) {
