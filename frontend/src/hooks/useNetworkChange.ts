@@ -36,7 +36,7 @@ export const useNetworkChange = (showError: (error: ErrorType) => void) => {
     } catch (error) {
       console.error("Failed to handle network change:", error);
     }
-  }, [navigate]);
+  }, [navigate, showError]);
 
   useEffect(() => {
     // Initial check
