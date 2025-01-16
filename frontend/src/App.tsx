@@ -10,14 +10,12 @@ import Router from "./Router";
 function App() {
   useWalletEvents();
 
-  // Placeholder for authentication check
-  const isAuthenticated = false; // Replace with actual authentication logic
+  const isAuthenticated = false;
 
   return (
     <ErrorProvider>
       <ModalProvider>
         <div className="min-h-screen text-white">
-          {isAuthenticated && <NavigationMenu />}
           <main className="container mx-auto px-4">
             <Router />
           </main>
