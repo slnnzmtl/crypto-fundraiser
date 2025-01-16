@@ -43,7 +43,6 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = observer(
     const handleConnect = async () => {
       try {
         await walletStore.connect();
-        await campaignStore.loadCampaigns();
       } catch (error) {
         console.error("Failed to connect wallet:", error);
       }
