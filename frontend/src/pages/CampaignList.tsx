@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { observer } from "mobx-react-lite";
 import CampaignListComponent from "@components/campaign/list/CampaignList";
 import PageTransition from "@components/layout/PageTransition";
