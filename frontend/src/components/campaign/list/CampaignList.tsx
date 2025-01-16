@@ -4,9 +4,9 @@ import { observer } from "mobx-react-lite";
 import { ViewToggle } from "@components/ui";
 import { EmptyState, CampaignListPlaceholder } from "@components/feedback";
 import CampaignListItem from "@components/campaign/list/CampaignListItem";
-import { useCampaignList } from "@hooks/useCampaignList";
 import FilterPanel from "@components/campaign/FilterPanel";
 import { theme } from "@/theme";
+import { Campaign } from "@/types/campaign";
 
 const containerVariants = {
   grid: {
@@ -22,24 +22,6 @@ const containerVariants = {
       ease: "easeOut",
       staggerChildren: 0.05,
     },
-  },
-};
-
-const itemVariants = {
-  grid: {
-    scale: 1,
-    opacity: 1,
-    transition: { duration: 0.3 },
-  },
-  list: {
-    scale: 1,
-    opacity: 1,
-    transition: { duration: 0.3 },
-  },
-  exit: {
-    scale: 0.95,
-    opacity: 0,
-    transition: { duration: 0.2 },
   },
 };
 
@@ -71,9 +53,12 @@ const filterVariants = {
   },
 };
 
-const CampaignList: React.FC = observer(() => {
-  const { campaigns, isLoading, viewType, handleCreateClick } =
-    useCampaignList();
+const CampaignList: React.FC<{
+  campaigns: Campaign[];
+  isLoading: boolean;
+  viewType: "grid" | "list";
+  handleCreateClick: () => void;
+}> = observer(({ campaigns, isLoading, viewType, handleCreateClick }) => {
   const [isFilterOpen, setIsFilterOpen] = useState(true);
 
   const renderContent = useCallback(() => {
@@ -106,20 +91,13 @@ const CampaignList: React.FC = observer(() => {
             ${
               viewType === "grid"
                 ? "grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 auto-rows-fr gap-6"
-                : "space-y-4"
+                : "flex flex-col gap-6"
             }
           `}
           style={{ color: theme.colors.dark[100] }}
         >
           {campaigns.map((campaign) => (
-            <motion.div
-              key={campaign.id}
-              variants={itemVariants}
-              layout
-              className="h-full"
-            >
-              <CampaignListItem campaign={campaign} viewType={viewType} />
-            </motion.div>
+            <CampaignListItem campaign={campaign} viewType={viewType} />
           ))}
         </motion.div>
       </AnimatePresence>

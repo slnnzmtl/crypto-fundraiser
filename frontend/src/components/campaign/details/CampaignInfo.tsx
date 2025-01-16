@@ -1,32 +1,32 @@
-import React from 'react';
-import { ICampaignInfo } from '../../../pages/interfaces';
-import { pluralize } from '@utils/format';
+import React from "react";
+import { ICampaignInfo } from "../../../pages/interfaces";
+import { pluralize } from "@utils/format";
 
 const CampaignInfo: React.FC<ICampaignInfo> = ({ campaign, daysLeft }) => {
   const getStatusColor = () => {
-    if (campaign.status === 'completed') {
-      return 'text-green-500';
+    if (campaign.status === "completed") {
+      return "text-green-500";
     }
-    return campaign.status === 'failed' ? 'text-red-500' : '';
+    return campaign.status === "failed" ? "text-red-500" : "";
   };
 
   const getStatusText = () => {
     switch (campaign.status) {
-      case 'completed':
-        return 'Completed';
-      case 'failed':
-        return 'Failed';
+      case "completed":
+        return "Completed";
+      case "failed":
+        return "Failed";
       default:
-        return 'Active';
+        return "Active";
     }
   };
 
   const getDaysLeft = React.useMemo(() => {
-    if (campaign.status === 'completed') {
+    if (campaign.status === "completed") {
       return null;
     }
 
-    return daysLeft > 0 ? pluralize(daysLeft, 'day') : 'Ended';
+    return daysLeft > 0 ? `${daysLeft} ${pluralize(daysLeft, "day")}` : "Ended";
   }, [campaign.status, daysLeft]);
 
   return (
@@ -37,13 +37,18 @@ const CampaignInfo: React.FC<ICampaignInfo> = ({ campaign, daysLeft }) => {
       </div>
       <div className="flex justify-between">
         <span className="text-gray-400">Owner</span>
-        <span className="text-white truncate ml-2 max-w-[200px]" title={campaign.owner}>
+        <span
+          className="text-white truncate ml-2 max-w-[200px]"
+          title={campaign.owner}
+        >
           {campaign.owner}
         </span>
       </div>
       <div className="flex justify-between">
         <span className="text-gray-400">Status</span>
-        <span className={`text-white ${getStatusColor()}`}>{getStatusText()}</span>
+        <span className={`text-white ${getStatusColor()}`}>
+          {getStatusText()}
+        </span>
       </div>
       {getDaysLeft && (
         <div className="flex justify-between">
@@ -55,4 +60,4 @@ const CampaignInfo: React.FC<ICampaignInfo> = ({ campaign, daysLeft }) => {
   );
 };
 
-export default CampaignInfo; 
+export default CampaignInfo;

@@ -3,11 +3,30 @@ import { Link } from "react-router-dom";
 import { ViewType } from "@interfaces";
 import { ImagePlaceholder } from "@components/ui";
 import { Campaign } from "@/types/campaign";
+import { motion } from "framer-motion";
 
 interface Props {
   campaign: Campaign;
   viewType: ViewType;
 }
+
+const itemVariants = {
+  grid: {
+    scale: 1,
+    opacity: 1,
+    transition: { duration: 0.3 },
+  },
+  list: {
+    scale: 1,
+    opacity: 1,
+    transition: { duration: 0.3 },
+  },
+  exit: {
+    scale: 0.95,
+    opacity: 0,
+    transition: { duration: 0.2 },
+  },
+};
 
 const CampaignListItem: React.FC<Props> = ({ campaign, viewType }) => {
   const [imageError, setImageError] = React.useState(false);
@@ -34,7 +53,10 @@ const CampaignListItem: React.FC<Props> = ({ campaign, viewType }) => {
 
   return (
     <Link to={`/campaigns/${campaign.id}`}>
-      <div
+      <motion.div
+        key={campaign.id}
+        variants={itemVariants}
+        layout
         className={`
         block bg-dark-800 rounded-lg overflow-hidden hover:bg-primary/10 transition-colors
         ${viewType === "list" ? "flex gap-0 md:gap-6" : ""}
@@ -49,7 +71,7 @@ const CampaignListItem: React.FC<Props> = ({ campaign, viewType }) => {
             <img
               src={campaign.image}
               alt={campaign.title}
-              className="w-full h-full object-cover"
+              className="w-full h-40 object-cover"
               onError={() => setImageError(true)}
             />
           ) : (
@@ -86,7 +108,7 @@ const CampaignListItem: React.FC<Props> = ({ campaign, viewType }) => {
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
     </Link>
   );
 };

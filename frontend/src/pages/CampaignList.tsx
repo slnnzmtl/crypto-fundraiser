@@ -1,19 +1,23 @@
-import React, { useEffect } from 'react';
-import { observer } from 'mobx-react-lite';
-import { campaignStore } from '@stores/CampaignStore';
-import CampaignListComponent from '@components/campaign/list/CampaignList';
-import PageTransition from '@components/layout/PageTransition';
+import React from "react";
+import { observer } from "mobx-react-lite";
+import CampaignListComponent from "@components/campaign/list/CampaignList";
+import PageTransition from "@components/layout/PageTransition";
+import { useCampaignList } from "@hooks/useCampaignList";
 
 const CampaignList: React.FC = () => {
-  useEffect(() => {
-    campaignStore.loadCampaigns();
-  }, []);
+  const { campaigns, isLoading, viewType, handleCreateClick } =
+    useCampaignList();
 
   return (
     <PageTransition>
-      <CampaignListComponent />
+      <CampaignListComponent
+        campaigns={campaigns}
+        isLoading={isLoading}
+        viewType={viewType}
+        handleCreateClick={handleCreateClick}
+      />
     </PageTransition>
   );
 };
 
-export default observer(CampaignList); 
+export default observer(CampaignList);

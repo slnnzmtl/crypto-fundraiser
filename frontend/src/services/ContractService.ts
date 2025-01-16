@@ -84,6 +84,10 @@ class ContractService {
     }
   }
 
+  getProvider() {
+    return this.provider;
+  }
+
   disconnect() {
     // Clean up our local state
     this.provider?.removeAllListeners();

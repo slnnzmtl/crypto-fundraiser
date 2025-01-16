@@ -10,12 +10,17 @@ import { LoadingSpinner } from "@/components/ui/primitives/LoadingSpinner";
 import CampaignList from "./pages/CampaignList";
 import CampaignDetails from "./pages/CampaignDetails";
 import WelcomeScreen from "./pages/WelcomeScreen";
+import { useNetworkChange } from "./hooks/useNetworkChange";
+import { useError } from "@/hooks/useError";
 
 const ProtectedCampaignList = withWalletGuard(CampaignList);
 const ProtectedCampaignDetails = withWalletGuard(CampaignDetails);
 
 const Router: React.FC = observer(() => {
   const isInitialized = useWalletInit();
+  const { showError } = useError();
+
+  useNetworkChange(showError);
 
   if (!isInitialized) {
     return <LoadingSpinner />;
