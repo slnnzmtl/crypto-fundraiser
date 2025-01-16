@@ -24,16 +24,25 @@ class WalletStore {
     this.error = error;
   });
 
+  async checkNetwork(): Promise<boolean> {
+    if (!window.ethereum) return false;
+
+    try {
+      const chainId = await window.ethereum.request({
+        method: "eth_chainId",
+      });
+      return chainId === "0xaa36a7"; // Sepolia chainId
+    } catch (error) {
+      console.error("Failed to check network:", error);
+      return false;
+    }
+  }
+
   async checkConnection(): Promise<boolean> {
     try {
+      await this.checkNetwork();
+
       const address = await contractService.checkConnection();
-
-      const provider = contractService.getProvider();
-      const network = await provider?.getNetwork();
-
-      if (network?.chainId !== BigInt(11155111)) {
-        walletStore.disconnect();
-      }
 
       this.setAddress(address);
       return !!address;
@@ -48,6 +57,11 @@ class WalletStore {
     this.setError(null);
 
     try {
+      const isCorrectNetwork = await this.checkNetwork();
+      if (!isCorrectNetwork) {
+        throw new Error(ErrorType.NETWORK);
+      }
+
       const address = await contractService.connect();
       this.setAddress(address);
     } catch (error) {
