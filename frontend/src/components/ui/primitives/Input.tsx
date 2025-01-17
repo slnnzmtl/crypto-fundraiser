@@ -42,7 +42,7 @@ const Input = React.forwardRef<HTMLInputElement, Props>(
               "bg-transparent border-none",
               "text-white leading-6 focus:outline-none",
               "transition-colors placeholder-transparent",
-              "placeholder-shown:pt-[16px]",
+              "placeholder-shown:pt-[20px]",
               className,
             )}
             placeholder={label}

@@ -23,6 +23,7 @@ const CampaignActions: React.FC<ICampaignActions> = ({
     reset,
   } = useDonationForm();
   const [isAmountFocused, setIsAmountFocused] = useState(false);
+  const [isMessageFocused, setIsMessageFocused] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -33,7 +34,7 @@ const CampaignActions: React.FC<ICampaignActions> = ({
     }
   };
 
-  if (isOwner) {
+  if (isOwner && campaign.status === "active") {
     return (
       <div className="space-y-4">
         <Button
@@ -53,7 +54,8 @@ const CampaignActions: React.FC<ICampaignActions> = ({
     return null;
   }
 
-  const showMessageField = isAmountFocused || amount !== "";
+  const showMessageField =
+    isAmountFocused || isMessageFocused || amount !== "" || message !== "";
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -87,6 +89,8 @@ const CampaignActions: React.FC<ICampaignActions> = ({
               onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
                 setMessage(e.target.value)
               }
+              onFocus={() => setIsMessageFocused(true)}
+              onBlur={() => setIsMessageFocused(false)}
               placeholder="Leave a message (optional)"
               disabled={isSubmitting}
               label="Message"
