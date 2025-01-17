@@ -64,18 +64,20 @@ const CampaignListItem: React.FC<Props> = ({ campaign, viewType }) => {
       >
         <div
           className={
-            viewType === "list" ? "min-w-[30%] w-48 shrink-1" : "aspect-video"
+            viewType === "list"
+              ? "w-[25%] h-30 md:h-32 flex-shrink-0 relative"
+              : "w-full aspect-[16/9] relative"
           }
         >
           {!imageError && campaign.image ? (
             <img
               src={campaign.image}
               alt={campaign.title}
-              className="w-full h-40 object-cover"
+              className="w-full h-full object-cover absolute inset-0"
               onError={() => setImageError(true)}
             />
           ) : (
-            <ImagePlaceholder className="w-full h-full" />
+            <ImagePlaceholder className="w-full h-full absolute inset-0" />
           )}
         </div>
 
