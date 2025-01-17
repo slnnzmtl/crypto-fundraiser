@@ -47,14 +47,19 @@ class CampaignStore {
     this.loading = true;
     await walletStore.checkConnection();
 
-    const campaigns = await contractService.getCampaigns();
-    console.log("Campaigns loaded:", campaigns);
-
-    runInAction(() => {
-      this.campaigns = campaigns;
-    });
-
-    this.setLoadingState(false, false);
+    try {
+      const campaignsPromises = await contractService.getCampaigns();
+      const campaigns = await Promise.all(campaignsPromises);
+      
+      runInAction(() => {
+        this.campaigns = campaigns;
+      });
+    } catch (error) {
+      console.error("Error loading campaigns:", error);
+      this.handleError(error);
+    } finally {
+      this.setLoadingState(false, false);
+    }
   }
 
   async loadCampaignById(id: number): Promise<void> {

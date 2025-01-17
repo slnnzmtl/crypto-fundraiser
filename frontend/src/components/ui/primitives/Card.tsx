@@ -24,7 +24,7 @@ export const Card: React.FC<CardProps> = ({
   }
 
   return (
-    <Glass className={`${className} rounded-xl overflow-hidden p-6`} {...props}>
+    <Glass className={`rounded-xl overflow-hidden p-6 ${className}`} {...props}>
       {children}
     </Glass>
   );

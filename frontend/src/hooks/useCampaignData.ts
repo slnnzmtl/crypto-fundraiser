@@ -21,6 +21,7 @@ export const useCampaignData = (id: string | undefined) => {
 
       const campaignId = parseInt(id);
       await Promise.all([
+        campaignStore.loadCampaigns(),
         campaignStore.loadCampaignById(campaignId),
         campaignStore.loadCampaignDonations(campaignId),
       ]);
@@ -41,6 +42,7 @@ export const useCampaignData = (id: string | undefined) => {
     if (!id) return null;
 
     const campaignId = parseInt(id);
+    console.log(campaignStore.campaigns);
     const foundCampaign = campaignStore.campaigns.find(
       (c) => c.id === campaignId,
     );
