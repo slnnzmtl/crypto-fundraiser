@@ -79,7 +79,7 @@ const CampaignList: React.FC<{
   }, [viewType, isLoading, campaigns, handleCreateClick]);
 
   return (
-    <div className="mt-8 flex flex-col gap-6 min-h-screen">
+    <div className="mt-8 flex flex-col gap-6">
       {!isLoading && (
         <div className="flex justify-between items-center gap-4">
           <FilterToggleButton onToggle={handleToggleFilterPanel} />
